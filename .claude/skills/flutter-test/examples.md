@@ -2,52 +2,86 @@
 
 ## Test Plan Summary Format
 
-| Type        | Cases  | Features                          | Est. Time |
-| ----------- | ------ | --------------------------------- | --------- |
-| Unit        | 12     | Auth, Product, Cart               | ~15s      |
-| Widget      | 8      | LoginForm, ProductCard, CartBadge | ~25s      |
-| Integration | 3      | Login flow, Add to cart, Checkout | ~90s      |
-| **Total**   | **23** |                                   | **~130s** |
+| Type        | Cases  | Features                                    | Est. Time |
+| ----------- | ------ | ------------------------------------------- | --------- |
+| Unit        | 18     | SlotWindow, SlotStatus, MoodSummary, Repo   | ~20s      |
+| Widget      | 7      | ScaleSelector, EmotionChips, EntryPage      | ~25s      |
+| Migration   | 2      | Schema v1→v2, v2→v3                         | ~5s       |
+| Integration | 3      | Onboarding→first recording, Notification tap, Export | ~90s |
+| **Total**   | **30** |                                             | **~140s** |
+
+Invariant suite: 10 of 10 included.
 
 ## Test Case Format
 
-| ID     | Type        | Target                      | Description                                  | Rationale                                                       | Deps          | Priority |
-| ------ | ----------- | --------------------------- | -------------------------------------------- | --------------------------------------------------------------- | ------------- | -------- |
-| UT-001 | Unit        | `EmailValidator.validate()` | Returns true for valid emails                | Prevents malformed emails reaching API, causing server-side 422 | None          | High     |
-| UT-002 | Unit        | `AuthRepository.login()`    | Returns AuthToken on valid creds             | Validates happy-path auth contract with API                     | MockApiClient | Critical |
-| UT-003 | Unit        | `AuthRepository.login()`    | Throws InvalidCredentialsException on 401    | Ensures typed exceptions instead of raw HTTP errors to user     | MockApiClient | Critical |
-| WT-001 | Widget      | `LoginForm`                 | Shows validation error on empty email submit | Users must see feedback on empty submit, not silent failure     | MockAuthCubit | High     |
-| WT-002 | Widget      | `LoginForm`                 | Disables button while loading                | Prevents double-submit causing duplicate sessions               | MockAuthCubit | Medium   |
-| IT-001 | Integration | Login → Home                | Navigates to Home after valid login          | Validates full chain: input → API → token storage → navigation  | MockAuthApi   | Critical |
+| ID     | Type   | Target                          | Description                                       | Rationale                                                                     | Deps       | Priority |
+| ------ | ------ | ------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- | -------- |
+| UT-001 | Unit   | `SlotWindowService.windowsFor()`| Splits a 16h waking span into three equal windows  | Every other slot behaviour depends on these boundaries being right             | None       | Critical |
+| UT-002 | Unit   | `SlotStatusService.statusOf()`  | Returns `open` inside the window                   | The entry form is editable only in this state                                  | FakeClock  | Critical |
+| UT-003 | Unit   | `SlotStatusService.statusOf()`  | Returns `completed` when a recording exists        | A saved slot must never reopen for editing                                     | FakeClock  | Critical |
+| UT-004 | Unit   | `MoodSummaryService.daily()`    | Averages three completed slots                     | The chart and the export both read this value                                  | None       | High     |
+| WT-001 | Widget | `MoodDiaryScaleSelector`        | Shows the word and face for the selected value     | An unanchored scale drifts; the label is what prevents it                      | None       | High     |
+| WT-002 | Widget | `MoodDiaryEntryPage`            | Save disabled until a scale and one emotion exist  | Prevents an empty or partial recording being written                           | Fake VM    | Critical |
+| IT-001 | Integration | Onboarding → first recording | Completes onboarding and saves one recording       | Validates the full chain: schedule write → window computation → save → chart   | FakeClock  | Critical |
+
+### Invariant Tests (prefix `INV-`)
+
+| ID     | Type   | Target                 | Description                                              | Rationale                                                                                              | Deps       | Priority |
+| ------ | ------ | ---------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | -------- |
+| INV-01 | Unit   | `RecordingRepository`  | Reading an empty day writes no rows                      | A read that writes turns every chart render into fabricated data                                        | In-mem DB  | Critical |
+| INV-02 | Unit   | `recordingDtoMapper`   | Null scale maps to null entity, not a default            | A default reads back as a real observation in the clinician's export                                    | None       | Critical |
+| INV-04 | Unit   | `MoodSummaryService`   | Zero recordings yields no point, not 0                   | A zero would plot as the worst possible day on a day with no data at all                                | None       | Critical |
+| INV-05 | Unit   | `RecordingService`     | Save at `windowEnd` is rejected                          | The no-backfill rule rests entirely on this boundary; one millisecond of slack removes it               | FakeClock  | Critical |
+| INV-08 | Migration | Schema v2 → v3      | All pre-existing recordings survive with identical values | This is the developer's own clinical record with no backup — a lossy migration is unrecoverable         | Real schemas | Critical |
 
 ### Edge Case Tests (suffix `-E`)
 
-| ID       | Type        | Target                   | Description                                                     | Rationale                                                                               | Deps                     | Priority |
-| -------- | ----------- | ------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------ | -------- |
-| UT-002-E | Unit        | `AuthRepository.login()` | Throws NetworkException on timeout                              | User sees "no connection" message instead of unhandled exception crash                  | MockApiClient (timeout)  | Critical |
-| UT-003-E | Unit        | `AuthRepository.login()` | Handles malformed JSON response body                            | Corrupted API response must not crash the app — must fail gracefully with typed error   | MockApiClient (bad body) | High     |
-| WT-001-E | Widget      | `LoginForm`              | Handles rapid double-tap on submit button                       | Prevents duplicate auth requests that could create parallel sessions                    | MockAuthCubit            | High     |
-| WT-002-E | Widget      | `LoginForm`              | Shows error when pasting email with leading/trailing whitespace | Whitespace in emails causes silent auth failures — must be trimmed or rejected visually | MockAuthCubit            | Medium   |
-| IT-001-E | Integration | Login → Token expiry     | Triggers token refresh when token expires mid-session           | Expired token during active use must not log out user — must silently refresh           | MockAuthApi (expired)    | Critical |
+| ID       | Type   | Target                          | Description                                                | Rationale                                                                                   | Deps          | Priority |
+| -------- | ------ | ------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------- | -------- |
+| UT-001-E | Unit   | `SlotWindowService.windowsFor()`| Sleep time after midnight resolves to the wake date         | Late bedtimes are the normal case for this user; getting the date wrong misfiles a whole day | None          | Critical |
+| UT-002-E | Unit   | `SlotStatusService.statusOf()`  | Open at `windowEnd - 1ms`, skipped at `windowEnd`           | Half-open interval — a closed interval would let one instant belong to two slots             | FakeClock     | Critical |
+| UT-003-E | Unit   | `SlotWindowService.windowsFor()`| Spring-forward transition inside window 2                   | A duration-based offset silently shifts boundaries by an hour twice a year                   | FakeClock     | High     |
+| UT-005-E | Unit   | `SlotStatusService.statusOf()`  | Window closed before `installedAt` returns `notApplicable`  | Otherwise the first day shows phantom skips and depresses the completion rate on day one     | FakeClock     | High     |
+| UT-006-E | Unit   | schedule resolution             | Changing the schedule leaves yesterday's windows unchanged  | A rewritten schedule silently relabels history and changes a week that is already over       | In-mem DB     | Critical |
+| WT-003-E | Widget | `MoodDiaryEntryPage`            | Window closes while the screen is open → becomes read-only  | Without it a save lands after the window shut, violating the no-backfill rule from the UI    | FakeClock     | Critical |
+| WT-004-E | Widget | `MoodDiaryScaleSelector`        | Renders at the largest system text scale without clipping   | The scale selector is the most-used control; clipping makes the app unusable at large sizes  | None          | Medium   |
+| IT-002-E | Integration | Notification tap            | Tapping a reminder after its window closed opens read-only  | A notification can be tapped hours later; the screen must not accept a late save             | FakeClock     | High     |
 
 ## Missing Packages STOP Format
 
 ```
 🛑 The following packages are required but missing from dev_dependencies:
 
-| Package            | Version | Required by                         |
-| ------------------ | ------- | ----------------------------------- |
-| mocktail           | ^1.0.4  | UT-002, UT-003, WT-001 (mock repos) |
-| network_image_mock | ^2.1.1  | WT-005 (product card with images)   |
-| patrol             | ^3.13.0 | IT-001, IT-002 (integration runner) |
+| Package        | Version | Required by                              |
+| -------------- | ------- | ---------------------------------------- |
+| mocktail       | ^1.0.4  | UT-002, WT-002 (service and VM fakes)    |
+| drift_dev      | ^2.x    | INV-08 (migration test harness)          |
+| clock          | ^1.1.1  | FakeClock helper, all time-dependent cases |
 
 Add these to pubspec.yaml? (y/n)
 ```
 
 ## Excluded Test Type Format
 
-| Type        | Include? | Reason                                                                                                             |
-| ----------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
-| Unit        | ✅        | Cart has calculation logic (subtotal, tax, discounts)                                                              |
-| Widget      | ✅        | Cart badge and remove button have interactive behavior                                                             |
-| Integration | ❌        | Checkout integration test already covers cart-to-payment flow — separate cart integration test duplicates coverage |
+| Type        | Include? | Reason                                                                                                    |
+| ----------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| Unit        | ✅        | History has date-range and aggregation logic                                                              |
+| Widget      | ✅        | Heatmap cells have four distinct states that must be visually distinguishable                             |
+| Integration | ❌        | Onboarding→first recording already exercises navigation into History; a separate flow duplicates coverage |
+
+## Report Format — invariant line first
+
+```text
+Invariant suite: 10/10 passed.
+
+| Type        | Total | Pass | Fail | Skip |
+| ----------- | ----- | ---- | ---- | ---- |
+| Unit        | 18    | 18   | 0    | 0    |
+| Widget      | 7     | 6    | 1    | 0    |
+| Migration   | 2     | 2    | 0    | 0    |
+| Integration | 3     | 3    | 0    | 0    |
+```
+
+If an invariant test fails, the line reads `Invariant suite: 9/10 — INV-05 FAILED` and the run stops
+there. An invariant failure is not a test to be fixed; it means the code violates a rule in
+`data-integrity-rules.md`.

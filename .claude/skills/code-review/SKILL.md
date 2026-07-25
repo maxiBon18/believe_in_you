@@ -1,14 +1,14 @@
 ---
 name: code-review
-description: "Run a structured code review on Dart files. Use when asked to review code, review a PR, check code quality, or audit changes in lib/**/*.dart. Covers architecture, code quality, null safety, widgets, state management, error handling, performance, security, responsiveness, and dependencies."
+description: "Run a structured code review on Dart files. Use when asked to review code, review a PR, check code quality, or audit changes in lib/**/*.dart. Covers architecture, data integrity, code quality, null safety, time correctness, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
 disable-model-invocation: true
 ---
 
 # Code Review Skill
 
-Run a structured, 10-area code review on modified Dart files and produce a prioritized report.
+Run a structured, 12-area code review on modified Dart files and produce a prioritized report.
 
-- For security, dependency, and output-format rules, see [reference.md](reference.md).
+- For privacy, dependency, and output-format rules, see [reference.md](reference.md).
 - For review output examples, see [examples.md](examples.md).
 
 Every `dart`/`flutter` command in this skill takes the `fvm` prefix (see `CLAUDE.md`).
@@ -16,13 +16,18 @@ Every `dart`/`flutter` command in this skill takes the `fvm` prefix (see `CLAUDE
 ## Scope
 
 - **Target files:** `lib/**/*.dart`
-- **Exclude generated files:** skip `*.g.dart`, `*.freezed.dart`, `*.gen.dart`, `*.mocks.dart`, and files with a `// GENERATED CODE` header.
+- **Exclude generated files:** skip `*.g.dart`, `*.freezed.dart`, `*.drift.dart`, `*.gen.dart`,
+  `*.mocks.dart`, and files with a `// GENERATED CODE` header.
 
 ## Severity Levels
 
 - **✅ Passed** — compliant.
 - **⚠️ Warning** — suggestion, non-blocking.
 - **🔴 Violation** — must fix before push.
+
+**Data-integrity findings are always 🔴.** They are never downgraded to a warning, never deferred,
+and never accepted with a TODO. The output of this app is read by a clinician; a fabricated or
+distorted value is a correctness bug of the most serious kind. See `data-integrity-rules.md`.
 
 ## Instructions
 
@@ -35,63 +40,101 @@ Every `dart`/`flutter` command in this skill takes the `fvm` prefix (see `CLAUDE
   - If all files are generated, stop and report: "All target files are generated — no review needed."
   - If no files are in scope, stop and report: "No reviewable Dart files found."
 
-### Step 2 — Architecture & layer separation
+### Step 2 — Data integrity
+
+**Run this first.** It is the area where a finding blocks everything else, so there is no point
+reviewing formatting in a file that fabricates a mood value.
+
+- Read `.claude/rules/code/data-integrity-rules.md`.
+- Check every one of the eight invariants against the files in scope. The recurring shapes are:
+  - `??` or a default parameter supplying a scale, emotion set, or timestamp
+  - a read path that writes — row creation during a fetch, an upsert inside a query
+  - a persisted `status`, or a stored `skipped`/`backfilled` flag
+  - missing values treated as zero in an average, or a chart interpolating across a gap
+  - a save path reachable after `windowEnd`
+  - streak counters, progress rings, celebratory or admonishing copy
+  - anything with a transport dependency
+  - a migration that drops or recreates without copying
+
+### Step 3 — Architecture & layer separation
 
 - Read `CLAUDE.md` §§ Architecture, Dependency rule, Where things live.
-- Verify each file respects layer boundaries (data, domain, presentation) and the inward
-  dependency direction.
+- Verify each file respects layer boundaries (data, domain, presentation) and the inward dependency
+  direction. Check specifically that domain logic — window computation, status derivation,
+  averaging — has not migrated into a ViewModel or a widget.
 
-### Step 3 — Dart code quality
+### Step 4 — Time correctness
+
+- Read `.claude/rules/code/coding-conventions.md` § Time and
+  `.claude/rules/code/domain-layer-rules.md` § Services.
+- Verify no `DateTime.now()`, `DateTime.timestamp()`, or bare `Timer` in `domain/` or `data/`, and
+  none in a ViewModel used to decide slot state.
+- Verify window arithmetic uses local wall-clock time and that the IANA timezone is carried.
+- Flag any comparison between timestamps from different zones without normalization.
+
+### Step 5 — Dart code quality
 
 - Read `.claude/rules/code/coding-conventions.md`.
 - Check naming, typing, immutability, size limits, and general Dart idioms.
+- Verify `SlotStatus` and other sealed types are handled with exhaustive `switch`, not `if` chains.
 
-### Step 4 — Null safety
+### Step 6 — Null safety
 
 - Read `.claude/rules/code/coding-conventions.md` § Null safety.
 - Verify no unnecessary nullable types, no `!` force-unwraps without a documented reason, and
   correct null-aware operator usage.
+- A `??` supplying a recorded value is a data-integrity violation, not a null-safety warning —
+  report it under Step 2.
 
-### Step 5 — Flutter widget quality
+### Step 7 — Flutter widget quality
 
 - Read `.claude/rules/code/presentation-layer-rules.md` §§ Naming and placement, Composition.
 - Check widget decomposition, `const` constructors, `Key` usage, and `build()` complexity.
 
-### Step 6 — State management (Riverpod)
+### Step 8 — State management (Riverpod)
 
-- Read `.claude/rules/code/viewmodel-rules.md` § Riverpod.
+- Read `.claude/rules/code/viewmodel-rules.md`.
 - Verify provider lifetime, `ref.watch` vs `ref.read`, `AsyncValue` modeling, and async-gap guards.
+- Check the entry ViewModel rules specifically: explicit save, no autosave, no optimistic clear, no
+  default scale in initial state.
 
-### Step 7 — Error handling
+### Step 9 — Error handling
 
 - Read `.claude/rules/code/coding-conventions.md` § Error handling.
-- Additionally verify every user-facing error produces UI feedback (dialog, snackbar, or error widget).
+- Verify every user-facing error produces UI feedback (dialog, snackbar, or error widget).
+- Verify a failed save leaves the form intact and retryable rather than silently discarding input.
 
-### Step 8 — Performance
+### Step 10 — Performance
 
 - Read `.claude/rules/code/presentation-layer-rules.md` § Performance.
-- Check for unnecessary rebuilds, missing `const`, and expensive work in build methods.
+- Check for unnecessary rebuilds, missing `const`, aggregation inside `build()`, and anything
+  blocking on the path to first frame — cold start is part of the 20-second entry budget.
 
-### Step 9 — Security
+### Step 11 — Privacy & security
 
-- Apply the security rules in [reference.md](reference.md) § Security.
-- Check for hardcoded credentials, sensitive data in logs, unsanitized input, and unencrypted
-  persisted data.
+- Apply the rules in [reference.md](reference.md) § Privacy & Security.
+- Check for secrets, note text or scale values in logs, unencrypted persistence, and any package
+  that could carry data off-device.
 
-### Step 10 — Platform & responsiveness
+### Step 12 — Accessibility & responsiveness
 
 - Read `.claude/rules/code/presentation-layer-rules.md` § Responsive and accessible.
-- Check for hardcoded dimensions, missing adaptive layouts, and platform-specific assumptions.
+- Check text scaling on the scale selector and emotion chips, 48x48 targets, semantics on the scale
+  faces, and that colour is never the sole carrier of meaning.
+- Flag any red-to-green mood ramp — see reference.md § Privacy & Security for why it is reviewed
+  here rather than treated as styling.
 
-### Step 11 — Dependencies & imports
+### Step 13 — Dependencies & imports
 
 - Apply the rules in [reference.md](reference.md) § Dependencies & Imports.
 - Check import order, unused dependencies, circular dependencies, and unjustified new packages.
 
-### Step 12 — Produce report
+### Step 14 — Produce report
 
 - Generate the output following [reference.md](reference.md) § Output Format.
 - Use [examples.md](examples.md) to calibrate structure and level of detail.
 - List the summary table first, then every 🔴 Violation with file, line, rule violated, and
   suggested fix, then every ⚠️ Warning.
+- If any data-integrity violation was found, say so explicitly at the top of the report before the
+  table.
 - If no violations or warnings exist, state "All checks passed" and briefly list what was verified.

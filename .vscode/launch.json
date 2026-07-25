@@ -4,23 +4,28 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
         {
-            "name": "style_mate",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "style_mate (profile mode)",
+            "name": "believe_in_you",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "customTool": "fvm",
+            "customToolReplacesArgs": 0
         },
         {
-            "name": "style_mate (release mode)",
+            "name": "believe_in_you (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "profile",
+            "customTool": "fvm",
+            "customToolReplacesArgs": 0
+        },
+        {
+            "name": "believe_in_you (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "customTool": "fvm",
+            "customToolReplacesArgs": 0
         }
     ]
 }

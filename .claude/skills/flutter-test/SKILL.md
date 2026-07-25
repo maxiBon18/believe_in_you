@@ -1,6 +1,6 @@
 ---
 name: flutter-test
-description: "Analyze a Flutter app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
+description: "Analyze the Mood Diary app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
 disable-model-invocation: true
 ---
 
@@ -9,8 +9,9 @@ disable-model-invocation: true
 Test plan → approval → execution. Only approved tests run.
 
 Every `dart`/`flutter` command in this skill takes the `fvm` prefix (see `CLAUDE.md`). Structure
-conventions are authoritative in `.claude/rules/code/testing-rules.md` — follow it where it and
-this skill overlap.
+conventions are authoritative in `.claude/rules/code/testing-rules.md` — follow it where it and this
+skill overlap. In particular, `test/` **mirrors `lib/`**; do not create `test/unit/`, `test/widget/`
+trees.
 
 - Testing rules & selection logic: [reference.md](reference.md)
 - Plan & test case format: [examples.md](examples.md)
@@ -20,7 +21,7 @@ this skill overlap.
 1. `find lib -type f -name "*.dart" | head -80`
 2. `find test -type f -name "*.dart" 2>/dev/null | head -40`
 3. `find integration_test -type f -name "*.dart" 2>/dev/null | head -20`
-4. Read `pubspec.yaml` → identify state management (Riverpod), test deps, key packages.
+4. Read `pubspec.yaml` → confirm Riverpod version, Drift, test deps.
    Riverpod ViewModels are tested with `ProviderContainer.test()` and provider overrides, not by
    mocking `ref` (see `.claude/rules/code/testing-rules.md`).
 
@@ -33,25 +34,37 @@ this skill overlap.
 ## Step 3 — Clarify (if needed)
 
 Stop and ask if ANY is unclear:
+
 - Which features/modules to test (and priority order)?
-- External services to mock?
 - Critical user flows requiring integration tests?
 - Existing test conventions to follow?
 - Features to exclude?
 
 ## Step 4 — Select test types
 
-Apply the **Selection Matrix** from [reference.md](reference.md) per feature. Include only justified types. Document excluded types with reason.
+Apply the **Selection Matrix** from [reference.md](reference.md) per feature. Include only justified
+types. Document excluded types with reason.
 
 ## Step 5 — Generate test plan
 
-Build plan following format in [examples.md](examples.md). Every test case needs: ID, Type, Target, Description, **Rationale** (mandatory — what breaks without this test), Dependencies, Priority.
+Build the plan following the format in [examples.md](examples.md). Every test case needs: ID, Type,
+Target, Description, **Rationale** (mandatory — what breaks without this test), Dependencies,
+Priority.
 
-For each feature, explicitly analyze **edge cases** using the Edge Case Checklist in [reference.md](reference.md). Edge case tests MUST be included in the plan with rationale explaining the boundary or failure condition they cover. Tag edge case IDs with suffix `-E` (e.g., `UT-003-E`).
+For each feature, explicitly analyze **edge cases** using the Edge Case Checklist in
+[reference.md](reference.md). Tag edge case IDs with suffix `-E`.
+
+### Mandatory invariant coverage
+
+Any plan touching entry, summary, or persistence **must** include the invariant suite in
+[reference.md](reference.md) § Invariant suite. These are not optional and are not negotiable down
+during plan review — they encode the rules in `data-integrity-rules.md`, which are the ones a future
+refactor will quietly break. If a plan omits them, add them before presenting it.
 
 ### 🛑 STOP 1 — Approve Plan
 
 Present the plan. Ask:
+
 - **approve** → proceed to Step 6.
 - **edit** → modify, re-present for approval.
 - **reject** → abort.
@@ -60,49 +73,55 @@ Do NOT write test code before approval.
 
 ## Step 6 — Verify infrastructure
 
-1. Check `dev_dependencies` for ALL packages required by the test plan (test runners, mocking libs, fakes, platform helpers).
+1. Check `dev_dependencies` for ALL packages required by the test plan.
 2. Compare required vs. present. If ANY package is missing:
 
 ### 🛑 STOP 2 — Missing Packages
 
-List every missing package with:
-- Package name and version.
-- Why it is needed (which test cases require it).
+List every missing package with name, version, and which test cases require it.
 
 Ask: **"These packages are required. Add them to pubspec.yaml? (y/n)"**
+
 - **y** → add via `fvm flutter pub add dev:<package>` (which runs pub get), then proceed.
-- **n** → remove dependent test cases from the plan, re-present the reduced plan for approval (go back to STOP 1).
+- **n** → remove dependent test cases from the plan, re-present the reduced plan for approval (go
+  back to STOP 1).
 
-Do NOT install packages without user approval.
+Do NOT install packages without user approval. A package that transmits data is refused outright,
+even in `dev_dependencies` — see `data-integrity-rules.md` § 6.
 
-3. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
+1. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
+2. Verify a `FakeClock` helper exists in `test/helpers/`. If not, write it first — most of this
+   app's meaningful tests depend on it.
 
 ## Step 7 — Write tests
 
 Order: **Unit → Widget → Integration.**
 
-- Mirror `lib/` structure: `test/unit/<feature>/`, `test/widget/<feature>/`, `integration_test/`.
-- Use `group()`, Arrange-Act-Assert, descriptive names (`'should [behavior] when [condition]'`).
-- Comment test plan ID above each test: `// UT-001`.
+- Mirror `lib/` structure exactly, per `.claude/rules/code/testing-rules.md`.
+- Use `group()`, Arrange-Act-Assert, descriptive names
+  (`'returns skipped once the window has closed'`).
+- Comment the test plan ID above each test: `// UT-001`.
+- Every time-dependent test drives the fake clock. No `Future.delayed` to cross a boundary, no real
+  `DateTime.now()`.
 - Mocking strategy per [reference.md](reference.md).
 
 ## Step 8 — Execute
 
-Run each type separately, in order:
+Run in order, narrowing to the directories in scope:
 
 ```bash
-fvm flutter test test/unit/ --reporter expanded
-fvm flutter test test/widget/ --reporter expanded
+fvm flutter test test/ --reporter expanded
 fvm flutter test integration_test/ --reporter expanded
 ```
 
 On failure → stop, report details, ask: fix / skip / abort.
 
+**Never make a failing invariant test pass by changing the assertion.** If an invariant test fails,
+the code is wrong, not the test. Report it and stop.
+
 ## Step 9 — Report
 
 ### 🛑 STOP 3 — Final Report
-
-Present compact summary:
 
 | Type        | Total | Pass | Fail | Skip |
 | ----------- | ----- | ---- | ---- | ---- |
@@ -110,4 +129,5 @@ Present compact summary:
 | Widget      | x     | x    | x    | x    |
 | Integration | x     | x    | x    | x    |
 
-List: failed tests (ID + reason + fix), coverage gaps, recommendations.
+List: failed tests (ID + reason + fix), coverage gaps, recommendations. State explicitly whether the
+invariant suite passed — that line goes first, before the table.

@@ -1,5 +1,5 @@
 ---
-description: "Naming, typing, null safety, and error handling for all Dart code"
+description: "Naming, typing, null safety, time, and error handling for all Dart code"
 paths:
   - "lib/**/*.dart"
   - "test/**/*.dart"
@@ -13,11 +13,11 @@ paths:
 
 | Element            | Convention                       | Example                               |
 | ------------------ | -------------------------------- | ------------------------------------- |
-| Files              | `snake_case` + type suffix       | `home_page.dart`, `payment_dto.dart`  |
-| Classes            | `PascalCase`                     | `SubscriptionEntity`                  |
-| Variables, methods | `camelCase`                      | `totalAmount`, `fetchSubscriptions()` |
-| Private members    | `_` prefix                       | `_controller`, `_calculateTotal()`    |
-| Booleans           | `is`/`has`/`should`/`can` prefix | `isActive`, `hasExpired`, `canDelete` |
+| Files              | `snake_case` + type suffix       | `home_page.dart`, `entry_dto.dart`    |
+| Classes            | `PascalCase`                     | `RecordingEntity`                     |
+| Variables, methods | `camelCase`                      | `slotIndex`, `fetchRecordings()`      |
+| Private members    | `_` prefix                       | `_controller`, `_computeWindow()`     |
+| Booleans           | `is`/`has`/`should`/`can` prefix | `isOpen`, `hasRecording`, `canEdit`   |
 
 File name by type — the suffix is how every other rule locates a file, so it is not optional:
 
@@ -27,6 +27,7 @@ File name by type — the suffix is how every other rule locates a file, so it i
 | Widget                      | `<name>_widget.dart`        |
 | DTO                         | `<name>_dto.dart`           |
 | Entity                      | `<name>_entity.dart`        |
+| Drift table                 | `<name>_table.dart`         |
 | ViewModel                   | `<name>_viewmodel.dart`     |
 | Service                     | `<name>_service.dart`       |
 | Repository interface / impl | `<name>_repository.dart` / `<name>_repository_impl.dart` |
@@ -42,13 +43,16 @@ File name by type — the suffix is how every other rule locates a file, so it i
 - `@immutable` on classes whose fields are all final.
 - Prefer records over one-off classes when returning two or three values with no behavior.
 - Prefer exhaustive `switch` expressions over `if`/`else` chains on sealed types — the compiler
-  then catches every missed case when a new variant is added.
+  then catches every missed case when a new variant is added. `SlotStatus` is sealed for exactly
+  this reason: adding a variant must break every site that handles statuses.
 - Use `=>` for single-expression functions and getters.
 
 ## Constants and magic values
 
-No literal numbers, durations, keys, or endpoint fragments inline. Put them in the feature's
-`shared/constants/`. User-visible strings are covered by the localization rule in
+No literal numbers, durations, keys, or file-name fragments inline. Put them in the feature's
+`shared/constants/`. This includes the domain's structural constants — slot count, scale bounds,
+the notification offset, the entry-time budget — which appear in more than one place and must not
+drift apart. User-visible strings are covered by the localization rule in
 `presentation-layer-rules.md`.
 
 ## Null safety
@@ -58,6 +62,22 @@ No literal numbers, durations, keys, or endpoint fragments inline. Put them in t
 - No `?.` chain deeper than two levels; bind an intermediate variable instead.
 - A nullable return type needs a doc comment stating what `null` means. If `null` has no distinct
   meaning, return a non-nullable type with a default.
+- **Never `??` a default onto a recorded value.** A missing mood value is missing; a missing
+  emotion set is missing. `scale ?? 3` and `emotions ?? const []` are bugs, not defensive coding.
+  See `data-integrity-rules.md`.
+
+## Time
+
+Time is this app's main source of bugs, and most of them are untestable if the clock is implicit.
+
+- Never call `DateTime.now()`, `DateTime.timestamp()`, or `Timer` directly in `domain/` or `data/`.
+  Inject a `Clock` through the constructor. Presentation may read the clock through its ViewModel,
+  never directly.
+- Slot windows are computed from **local wall-clock time**, so a DST change shifts them rather than
+  breaking them. Store the IANA timezone identifier alongside every timestamp.
+- Compare instants, not formatted strings, and never compare a `DateTime` in one zone against one
+  in another without normalizing first.
+- A test that depends on the real clock is a flaky test. Advance a fake clock instead.
 
 ## Async
 
@@ -73,8 +93,18 @@ No literal numbers, durations, keys, or endpoint fragments inline. Put them in t
   so the stack trace survives.
 - Never swallow: log, rethrow, or convert into a typed failure. An empty `catch` block is a bug.
 - Define domain-specific exceptions in `domain/` and translate infrastructure exceptions
-  (`DioException`, `FirebaseException`) into them at the repository
-  boundary, so nothing above `data/` has to know the transport.
+  (`SqliteException`, `DriftWrappedException`, `PlatformException` from notifications or the share
+  sheet) into them at the repository boundary, so nothing above `data/` has to know the storage
+  engine.
+- **A failed write is never silently downgraded to a no-op.** If a recording cannot be saved, the
+  user is told, and the entry screen stays in a state they can retry from. Losing a recording
+  silently is worse than crashing.
+
+## Logging
+
+Logging is local-only and must never carry note text, emotion selections, or scale values. Log
+identifiers, counts, and state transitions. There is no remote sink and no crash reporter — see
+`data-integrity-rules.md`.
 
 ## Size limits
 

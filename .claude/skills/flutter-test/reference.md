@@ -4,93 +4,137 @@
 
 | Type        | Tests                                   | Speed | Requires device | Runner                               |
 | ----------- | --------------------------------------- | ----- | --------------- | ------------------------------------ |
-| Unit        | Logic, models, repos, utils, state mgmt | ms    | No              | `fvm flutter test test/unit/`        |
-| Widget      | Rendering, interactions, state display  | sec   | No              | `fvm flutter test test/widget/`      |
-| Integration | Multi-screen flows, navigation, e2e     | min   | Yes             | `fvm flutter test integration_test/` |
+| Unit        | Logic, entities, repos, services         | ms    | No              | `fvm flutter test test/`             |
+| Widget      | Rendering, interactions, state display   | sec   | No              | `fvm flutter test test/`             |
+| Migration   | Schema upgrades preserving data          | sec   | No              | `fvm flutter test test/`             |
+| Integration | Multi-screen flows, navigation, e2e      | min   | Yes             | `fvm flutter test integration_test/` |
+
+Unit, widget, and migration tests all live under `test/`, mirroring `lib/`. There is no
+`test/unit/` split.
 
 ## Selection Matrix
 
 Check each row per feature. ✅ = include that test type.
 
-| Feature characteristic                            | Unit  | Widget | Integration |
-| ------------------------------------------------- | :---: | :----: | :---------: |
-| Business logic, calculations, validation rules    |   ✅   |   —    |      —      |
-| Data models (toJson/fromJson, equality)           |   ✅   |   —    |      —      |
-| Repository/service with external deps             |   ✅   |   —    |      —      |
-| State management logic (BLoC/Cubit/Notifier)      |   ✅   |   —    |      —      |
-| Form inputs with validation                       |   ✅   |   ✅    |      —      |
-| Conditional UI based on state                     |   —   |   ✅    |      —      |
-| User interactions (tap, swipe, text input)        |   —   |   ✅    |      —      |
-| Loading / error / empty states                    |   —   |   ✅    |      —      |
-| Multi-screen navigation flow                      |   —   |   —    |      ✅      |
-| Critical user journey (auth, payment, onboarding) |   —   |   —    |      ✅      |
-| Platform channels / device features               |   —   |   —    |      ✅      |
-| Deep linking / universal links                    |   —   |   —    |      ✅      |
+| Feature characteristic                              | Unit  | Widget | Integration |
+| --------------------------------------------------- | :---: | :----: | :---------: |
+| Window computation, status derivation, averaging    |   ✅   |   —    |      —      |
+| Entities (equality, immutability)                   |   ✅   |   —    |      —      |
+| Repository with a data source dependency            |   ✅   |   —    |      —      |
+| Drift schema change                                 |   ✅   |   —    |      —      |
+| ViewModel logic (Notifier/AsyncNotifier)            |   ✅   |   —    |      —      |
+| Scale selector, emotion chips, note field           |   ✅   |   ✅    |      —      |
+| Conditional UI based on slot status                 |   —   |   ✅    |      —      |
+| User interactions (tap, drag, text input)           |   —   |   ✅    |      —      |
+| Loading / error / empty / skipped states            |   —   |   ✅    |      —      |
+| Text scaling and semantics                          |   —   |   ✅    |      —      |
+| Onboarding → first recording flow                   |   —   |   —    |      ✅      |
+| Notification tap → entry screen                     |   —   |   —    |      ✅      |
+| Export generation and share                         |   —   |   —    |      ✅      |
+| Delete-all-data flow                                |   —   |   —    |      ✅      |
+
+## Invariant suite — mandatory
+
+These encode `data-integrity-rules.md`. Include every applicable one in any plan touching entry,
+summary, or persistence. All are Critical priority.
+
+| ID     | Target                  | Assertion                                                        |
+| ------ | ----------------------- | ---------------------------------------------------------------- |
+| INV-01 | `RecordingRepository`   | Reading a day with no recordings writes nothing — row count unchanged |
+| INV-02 | mapper                  | A null scale maps to a null entity, never to a default value      |
+| INV-03 | `MoodSummaryService`    | Average over 1 completed + 2 skipped equals the single value, day flagged incomplete |
+| INV-04 | `MoodSummaryService`    | A day with 0 recordings yields no point — not 0, not interpolated |
+| INV-05 | `RecordingService`      | Saving into a closed window fails                                 |
+| INV-06 | `SlotStatusService`     | A window closed before `installedAt` is `notApplicable`, not `skipped` |
+| INV-07 | completion rate         | `notApplicable` slots are excluded from the denominator           |
+| INV-08 | migration n → n+1       | Every pre-existing recording survives with identical values       |
+| INV-09 | export                  | Export summary equals the on-screen summary for the same week     |
+| INV-10 | logging                 | No note text, emotion, or scale value appears in any log output   |
 
 ## Edge Case Checklist
 
-For each feature in scope, systematically check these categories. Each applicable edge case becomes a test case tagged with `-E` suffix.
+For each feature in scope, check these categories. Each applicable case becomes a `-E` test.
 
-| Category         | What to test                                                                                 |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| **Null / Empty** | Null inputs, empty strings, empty lists, missing optional fields                             |
-| **Boundaries**   | Min/max values, 0, negative numbers, max length strings, list with 1 item vs. 1000           |
-| **Format**       | Invalid email, malformed JSON, special characters, unicode, RTL text, extra whitespace       |
-| **Network**      | Timeout, no connection, slow response, HTTP 4xx/5xx, malformed response body                 |
-| **State**        | Rapid state changes, back-to-back identical events, stale state after background resume      |
-| **Concurrency**  | Double-tap submit, multiple rapid navigations, simultaneous API calls                        |
-| **Permissions**  | Denied permission, revoked permission mid-flow, "don't ask again" selected                   |
-| **Device**       | Low memory, disk full, interrupted (phone call during flow), screen rotation during async op |
-| **Auth**         | Expired token mid-flow, revoked session, concurrent login from another device                |
-| **Data**         | First launch (no data), corrupted cache, schema migration from older version                 |
+| Category           | What to test                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| **Slot boundary**  | `windowStart`, `windowStart - 1ms`, `windowEnd - 1ms`, `windowEnd`. Half-open interval respected |
+| **Midnight**       | Sleep time after midnight; the "day" is the wake date                                          |
+| **DST**            | Transition inside a window, both directions                                                    |
+| **Schedule change**| Yesterday's slots keep their original windows; change applies from tomorrow                    |
+| **Span validation**| Waking span < 8h and > 20h rejected                                                            |
+| **Install**        | First launch mid-day; slots already closed are `notApplicable`                                 |
+| **Null / Empty**   | No recordings at all; note absent; single emotion; all sixteen emotions                        |
+| **Boundaries**     | Scale at 1 and 5; a week with 0 and with 21 recordings                                         |
+| **Format**         | Long note, unicode, RTL text, whitespace-only note                                             |
+| **State**          | Window closes while the entry screen is open; app resumed after days in background             |
+| **Concurrency**    | Double-tap save; save racing the window close                                                  |
+| **Permissions**    | Notification permission denied; Android exact-alarm revoked mid-use                            |
+| **Device**         | Reboot (reminders rescheduled); timezone changed while the app was closed                      |
+| **Data**           | First launch with no data; migration from an older schema; delete-all then re-record           |
 
-**Rule:** Every feature MUST have at least 2 edge case tests. If analysis reveals no applicable edge cases, document why in the plan.
+**Rule:** Every feature MUST have at least 2 edge case tests. If analysis reveals none applicable,
+document why in the plan.
+
+There is no Network or Auth category. The app has neither — a plan proposing tests for them has
+misunderstood the architecture.
 
 ## Priority Levels
 
-| Priority | Assign when                                                                            |
-| -------- | -------------------------------------------------------------------------------------- |
-| Critical | Auth, payments, data persistence, security, edge cases that cause data loss or crashes |
-| High     | Core CRUD, navigation, form submission, edge cases on critical paths                   |
-| Medium   | Non-blocking UI edge cases, formatting, secondary flows                                |
-| Low      | Cosmetic, animations, rare paths with graceful fallbacks                               |
+| Priority | Assign when                                                                                |
+| -------- | ------------------------------------------------------------------------------------------ |
+| Critical | Invariant suite, migrations, anything that can write or lose a recording, slot boundaries  |
+| High     | Entry flow, status derivation, notification scheduling, summary computation                |
+| Medium   | Non-blocking UI states, formatting, History navigation                                     |
+| Low      | Cosmetic, animations, rare paths with graceful fallbacks                                   |
 
 ## Rationale Rules
 
 Rationale answers: **"What breaks without this test?"**
 
-- ✅ `"Prevents double-charge if user taps pay twice during loading"`
-- ✅ `"Validates expired tokens trigger refresh instead of 401 to user"`
+- ✅ `"Prevents a null scale reading back as a neutral 3 in the clinician's export"`
+- ✅ `"Ensures a save one millisecond after the window closes is rejected, not accepted late"`
 - ❌ `"To make sure it works"`
 - ❌ `"For code coverage"`
 
+For invariant tests, the rationale states the clinical consequence, not the rule number.
+
 ## Mocking Strategy
 
-| Dependency                    | Approach                                                       |
-| ----------------------------- | -------------------------------------------------------------- |
-| HTTP (dio/http)               | `MockClient` or `HttpClientAdapter` with canned responses      |
-| Firebase                      | `fake_cloud_firestore`, `firebase_auth_mocks`, or custom fakes |
-| SharedPreferences             | `SharedPreferences.setMockInitialValues({})`                   |
-| Local DB (sqflite/drift/isar) | In-memory instance                                             |
-| Platform channels             | `TestDefaultBinaryMessenger`                                   |
-| Repos / Services              | `mocktail` or `mockito` mocks                                  |
-| Navigation                    | `MockNavigatorObserver`                                        |
+| Dependency                    | Approach                                                          |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `Clock`                       | Hand-written `FakeClock` with `advance(Duration)`. Never a mock    |
+| Drift database                | In-memory instance (`NativeDatabase.memory()`)                    |
+| Migrations                    | Real schema versions via Drift's migration test harness           |
+| Local notifications           | Fake implementing the scheduler interface; assert on scheduled set |
+| PDF / share                   | Fake adapter; assert on the summary model passed in, not on bytes  |
+| Repos / Services              | Hand-written fakes for 2–3 method interfaces; `mocktail` otherwise |
+| Riverpod                      | `ProviderContainer.test()` with provider overrides                |
+| Navigation                    | `MockNavigatorObserver`                                            |
+
+No HTTP, Firebase, or auth mocking — none of it exists in this app.
 
 ## Test Structure Rules
 
 - Pattern: **Arrange-Act-Assert** in every test.
-- Naming: `'should [behavior] when [condition]'`.
-- Grouping: `group()` by logical category.
+- Naming: `'[behavior] when [condition]'`.
+- Grouping: one top-level `group()` per class under test, named after that class.
 - ID comment above each test: `// UT-001: [description]`.
+- Time is always driven by `FakeClock`.
 
 ## File Organization
 
+`test/` mirrors `lib/`, per `.claude/rules/code/testing-rules.md`:
+
 ```text
 test/
-├── unit/<feature>/<class>_test.dart
-├── widget/<feature>/<widget>_test.dart
+├── entry/domain/services/slot_status_service_test.dart
+├── entry/data/repo/recording_repository_impl_test.dart
+├── entry/presentation/viewmodel/slot_entry_viewmodel_test.dart
+├── entry/presentation/ux/entry_page_test.dart
+├── core/data/source/db/migration_test.dart
 └── helpers/
-    ├── mocks.dart
+    ├── fake_clock.dart
+    ├── fakes.dart
     └── fixtures/
 integration_test/<flow>_test.dart
 ```
