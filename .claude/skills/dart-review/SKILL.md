@@ -1,10 +1,11 @@
 ---
-name: code-review
-description: "Run a structured code review on Dart files. Use when asked to review code, review a PR, check code quality, or audit changes in lib/**/*.dart. Covers architecture, data integrity, code quality, null safety, time correctness, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
+name: dart-review
+description: "Run a structured 12-area code review on Mood Diary Dart files. Use when asked to review code, check code quality, or audit changes in lib/**/*.dart. Covers data integrity, architecture, time correctness, code quality, null safety, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob
 ---
 
-# Code Review Skill
+# Dart Review Skill
 
 Run a structured, 12-area code review on modified Dart files and produce a prioritized report.
 
@@ -36,6 +37,9 @@ distorted value is a correctness bug of the most serious kind. See `data-integri
 - Determine which `.dart` files in `lib/` are modified or under review.
 - Exclude generated files (see Scope above).
 - If you are unsure which files to review, ask the user for a list and review those.
+- Run `fvm dart analyze` once, before reading anything. Everything it reports is already known —
+  do not re-report lint findings as review findings. This review is for what the analyzer cannot
+  see. A file that does not analyze cleanly is reported as one line and reviewed anyway.
 - Stop conditions:
   - If all files are generated, stop and report: "All target files are generated — no review needed."
   - If no files are in scope, stop and report: "No reviewable Dart files found."
@@ -51,7 +55,7 @@ reviewing formatting in a file that fabricates a mood value.
   - a read path that writes — row creation during a fetch, an upsert inside a query
   - a persisted `status`, or a stored `skipped`/`backfilled` flag
   - missing values treated as zero in an average, or a chart interpolating across a gap
-  - a save path reachable after `windowEnd`
+  - a save path still reachable after the window has closed
   - streak counters, progress rings, celebratory or admonishing copy
   - anything with a transport dependency
   - a migration that drops or recreates without copying
@@ -62,6 +66,9 @@ reviewing formatting in a file that fabricates a mood value.
 - Verify each file respects layer boundaries (data, domain, presentation) and the inward dependency
   direction. Check specifically that domain logic — window computation, status derivation,
   averaging — has not migrated into a ViewModel or a widget.
+- If the file navigates, read `.claude/rules/code/routing-rules.md`. Flag any `Navigator.push` with
+  a widget literal, any `MaterialPageRoute` outside the router, any `AppRouter` held by a ViewModel,
+  and any `default` branch in a `switch` over `AppRoute`.
 
 ### Step 4 — Time correctness
 
@@ -76,7 +83,8 @@ reviewing formatting in a file that fabricates a mood value.
 
 - Read `.claude/rules/code/coding-conventions.md`.
 - Check naming, typing, immutability, size limits, and general Dart idioms.
-- Verify `SlotStatus` and other sealed types are handled with exhaustive `switch`, not `if` chains.
+- Verify sealed types — slot status above all — are handled with exhaustive `switch`, not `if`
+  chains, and that no `default` branch swallows a new variant.
 
 ### Step 6 — Null safety
 

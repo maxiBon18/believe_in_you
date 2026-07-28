@@ -41,10 +41,14 @@ the concrete, storage-specific implementations.
 - Table definitions live in `data/source/db/`, one table per file, `<name>_table.dart`.
 - The generated row class **is** the DTO for that table. Do not hand-write a parallel DTO to sit
   beside it; map the row class straight to an entity.
-- Every table carries `id` (UUID text), `updatedAt`, and `deletedAt`. Soft delete everywhere —
-  a hard delete only happens through the delete-all-data action.
 - Queries live in the data source, never in the repository body and never in a service.
 - Re-run codegen after any change to a table (command in `CLAUDE.md`).
+
+Table and column names, the identity strategy, and whether deletion is soft or hard are **decided
+when the first table is written**, not here — the whole schema is confirm-first (`CLAUDE.md`
+§ Confirm first). Decide them once and apply them uniformly; a store where half the tables soft
+delete is a store nobody can reason about. Whatever is chosen, § 8 of `data-integrity-rules.md`
+still binds: no path may discard a recording.
 
 ### Migrations
 
@@ -64,18 +68,20 @@ generates `when`/`map` — use Dart pattern matching instead:
 
 ```dart
 @freezed
-abstract class ExportBundleDto with _$ExportBundleDto {
-  const factory ExportBundleDto({
+abstract class ExampleDto with _$ExampleDto {
+  const factory ExampleDto({
     required int schemaVersion,
-    @JsonKey(name: 'exported_at') required DateTime exportedAt,
-    required List<RecordingDto> recordings,
-  }) = _ExportBundleDto;
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    required List<ItemDto> items,
+  }) = _ExampleDto;
 
-  factory ExportBundleDto.fromJson(Map<String, Object?> json) => _$ExportBundleDtoFromJson(json);
+  factory ExampleDto.fromJson(Map<String, Object?> json) => _$ExampleDtoFromJson(json);
 }
 ```
 
 </example>
+
+Shape only — the export payload's own fields are decided when the export feature is built.
 
 ## Repositories
 
@@ -83,22 +89,29 @@ abstract class ExportBundleDto with _$ExportBundleDto {
   direct database access inside the repository body.
 - **Mapping happens here.** A repository accepts and returns entities on its public surface and
   converts row → entity internally. A DTO or Drift row class must never escape `data/`. Keep the
-  conversion in an extension (`recording_dto_mapper.dart`) rather than inline, so it is testable on
-  its own.
+  conversion in an extension in its own file (`<name>_dto_mapper.dart`) rather than inline, so it is
+  testable on its own.
 - Translate infrastructure exceptions into domain exceptions at this boundary (see § Error handling
   in `coding-conventions.md`). A `SqliteException` reaching a ViewModel is a bug.
 - Caching and retry policy live in the repository, not in the data source and not in a service.
 
 ### Repository rules specific to this app
 
+These constrain behaviour, not schema. The columns and constraints that deliver them are chosen
+when the tables are written.
+
 - **A read never writes.** Fetching a day's slots must not create rows for the missing ones. The
   repository returns the recordings that exist; a domain service decides what the gaps mean.
-- **No default row.** There is no `Recording.empty()` and no neutral placeholder returned when a
-  row is absent. Return `null` or an empty collection and let the domain service handle it.
-- **Denormalize the window at write time.** `windowStart`, `windowEnd`, and the IANA timezone are
-  written onto the row when the recording is saved, so entries stay self-describing even if the
-  schedule history is lost.
-- **`schedules` is append-only.** A change writes a new row with a new `effectiveFrom`; it never
-  updates an existing one. Rewriting a schedule row silently relabels historical slots.
-- **Enforce one row per slot in the database**, not only in code: a unique constraint on
-  `(date(refersTo), slotIndex)`.
+- **No default row.** No `empty()` factory, no neutral placeholder returned when a row is absent.
+  Return `null` or an empty collection and let the domain service handle it.
+- **A recording stays interpretable on its own.** Reading a past recording must not depend on the
+  schedule history still being intact, so the window it belonged to has to be recoverable from the
+  recording itself. Deciding how — denormalised onto the row, or otherwise — is part of designing
+  the schema.
+- **A schedule change never rewrites history.** A past slot keeps the schedule that was in effect
+  when it happened; a new wake/sleep pair applies going forward. A storage design that updates a
+  schedule in place silently relabels every slot already recorded under it.
+- **One recording per slot is enforced by the database**, not only in code. The uniqueness key is
+  the slot's own identity — the wake date it belongs to, not the calendar date of its timestamp,
+  which differ whenever the waking span crosses midnight. Keying on the timestamp lets a
+  post-midnight slot duplicate.

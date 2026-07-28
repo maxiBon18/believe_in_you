@@ -16,7 +16,7 @@ attacker on the wire, it is data leaving the device at all.
 - The database is encrypted at rest. Preferences holding anything about recordings use secure
   storage, not `SharedPreferences`.
 - Route observers and provider loggers record names only, never arguments — a route argument carries
-  a date and slot index.
+  a date and a slot.
 - Export writes to a temporary location and is shared through the OS share sheet; it is not left in
   a world-readable directory.
 
@@ -31,9 +31,13 @@ attacker on the wire, it is data leaving the device at all.
 These rules are evaluated directly by the skill:
 
 - No unused dependencies in `pubspec.yaml`.
-- Import order: `dart:` → `package:flutter/` → `package:` (third-party) → project relative imports.
-- Prefer relative imports within the same feature.
+- Import order: `dart:` → `package:flutter/` → `package:` (third-party) →
+  `package:believe_in_you/` (project).
+- **All project imports are package imports.** `analysis_options.yaml` enables
+  `always_use_package_imports`, so a relative import fails analysis — including within one feature.
 - No circular dependencies between features.
+- No import that crosses a feature boundary into another feature's `data/` or `presentation/`.
+  Shared code is promoted to `core/`, not reached into.
 - New packages must be justified (maintenance status, pub.dev popularity, null safety support) —
   **and must not transmit data**. A new dependency with a network capability is a 🔴, not a
   discussion.
@@ -57,6 +61,8 @@ areas. Read each file at the step that references it:
 | Performance        | `.claude/rules/code/presentation-layer-rules.md` | § Performance                        |
 | Accessibility      | `.claude/rules/code/presentation-layer-rules.md` | § Responsive and accessible          |
 | Data layer specifics | `.claude/rules/code/data-layer-rules.md`       | § Repository rules specific to this app |
+| Navigation         | `.claude/rules/code/routing-rules.md`            | Full file                            |
+| Vocabulary         | `CLAUDE.md`                                      | § Vocabulary                         |
 
 ## Output Format
 

@@ -7,70 +7,68 @@ note. The app charts the trend and produces a one-page weekly PDF for the user's
 The three daily moments are computed from the user's declared wake and sleep times, not fixed at
 preset hours.
 
-## Learning boundaries — read before implementing anything
-
 This is a study project: the goal is for the developer to learn Flutter architecture and, later,
-backend development. Generated code that skips the reasoning defeats the point.
-
-- **Do not write the implementation** for the custom router (Navigator 1.0/2.0, `RouterDelegate`,
-  guards), the slot-window computation and its edge cases, or the Drift schema and its migrations.
-  Explain the mechanism or produce a plan, then stop and let the developer write it.
-- **Delegate freely:** DTO and entity mapping, boilerplate widgets, test scaffolding, codegen
-  wiring, repetitive refactors inside an established pattern, chart and PDF layout code.
-- When a task sits between the two, ask which side it falls on.
+backend development.
 
 ## Product decisions
 
-`business_analysis_en.md` is the source of truth. §4 records what was decided **and why**,
-including costs that were knowingly accepted. Before proposing a behavioural change, check whether
-§4 already rejected it and on what grounds.
+`business_analysis_en.md` is the source of truth, and the only business document in this repo — a
+citation to any other filename is stale. §4 records what was decided **and why**, including costs
+knowingly accepted. Before proposing a behavioural change, check whether §4 already rejected it.
 
 ## Invariants
 
-Not open to convenience-driven revision. An implementation that violates one is wrong, regardless of
-how clean it looks.
+Not open to convenience-driven revision. An implementation that violates one is wrong regardless of
+how clean it looks — raise it rather than weakening it. Full rationale and the concrete code shapes
+that violate each one are in `.claude/rules/code/data-integrity-rules.md`, which loads whenever you
+touch a Dart file.
 
-1. **Never synthesise a mood value.** No defaults, no imputation, no neutral fill for a missing
-   entry. Missing data is recorded as missing. Unlogged evenings are disproportionately bad
-   evenings, so imputing a neutral value systematically replaces the worst data with the blandest —
-   and a clinician reads the result as an observation.
+1. **Never synthesise a mood value** — no defaults, no imputation, no interpolation.
 2. **A row is written only when the user saves.** `skipped` is derived at read time, never stored.
-   There is no `status` column and no background job that creates pending rows.
-3. **No editing once a slot window closes.** No backfill, no "recorded late" path. `recorded_at`
-   therefore always falls inside `[window_start, window_end)`.
-4. **Excluded from the daily average:** skipped slots. Never counted as zero, never interpolated.
-   Days with fewer than three recordings are marked, not silently averaged.
-5. **No streaks, badges, scores, or celebratory copy.** No admonishing copy either. Completion rate
-   is stated factually (`18 of 21`) and never appears on the entry screen.
-6. **Local only.** No network calls, no analytics, no third-party crash reporting that could carry
-   note text. Health data does not leave the device in v1.
-7. **The support-resources screen stays reachable** from Settings, permanently, without
-   interrupting anything. Do not add content scanning or reactive prompts to the note field.
-8. **Entry cost is a hard budget:** under 20 seconds from cold launch to saved recording.
+3. **No editing once a slot window closes.** No backfill, no "recorded late" path.
+4. **Missing data is excluded from averages**, never zeroed and never interpolated.
+5. **No streaks, badges, scores, or evaluative copy** — celebratory or admonishing.
+6. **Local only.** No network, no analytics, no third-party crash reporting.
+7. **The support-resources screen stays reachable** from Settings, permanently.
+8. **Migrations must not lose recordings.** This is the developer's own clinical record.
 
-## Stack
+Entry cost is a hard budget on top of these: **under 20 seconds from cold launch to saved
+recording.**
 
-Do not assume versions — pinned numbers here go stale silently. Read `pubspec.yaml` for packages,
+## Vocabulary
+
+One word per concept, in code, copy, and commits. Two words for one concept is how a rule stops
+being findable.
+
+| Term | Means | Never |
+| --- | --- | --- |
+| **recording** | One saved observation for one slot | entry, log, record |
+| **slot** | One of the three daily moments | period, session, timeslot |
+| **window** | The time range a slot is open for | interval, range |
+| **schedule** | A wake/sleep pair that applies from a given date onward | settings, times |
+| **skipped** | A slot whose window closed with no recording | missed, empty |
+| **not applicable** | A slot whose window closed before installation | skipped |
+| **scale** | The 1–5 value | score, rating, mood level |
+| **export** | The weekly PDF for the clinician | report, summary |
+
+The vocabulary fixes **concepts, not identifiers**. Class, table, column, service, and route names
+are chosen when the feature that needs them is built. No rule file in `.claude/` prescribes one, and
+none should start to — a name written down before the code exists is a name the code will disagree
+with. Where a rule needs to point at something unbuilt, it describes the role (*the service that
+derives slot status*) rather than inventing a symbol.
+
+## Stack and system boundaries
+
+Do not assume versions — pinned numbers go stale silently. Read `pubspec.yaml` for packages,
 `fvm flutter doctor` for Flutter/Dart/Android SDK/Xcode, `fvm --version` for FVM.
 
-Persistence is Drift over SQLite. Notifications are `flutter_local_notifications`. Charts are
-`fl_chart`. Export is `pdf` + `printing`.
+Persistence is Drift over SQLite, encrypted at rest, and the only store. Notifications are
+`flutter_local_notifications`, one per slot, scheduled on-device. Charts are `fl_chart`. Export is
+`pdf` + `printing`, generated on-device and shared through the OS share sheet. The Flutter app holds
+all business logic.
 
-## System boundaries
-
-- **Flutter app** — UI, state, user interaction, all business logic.
-- **Local database** — Drift/SQLite, encrypted at rest. The only store in v1.
-- **Local notifications** — one per slot, scheduled on-device.
-- **PDF export** — generated on-device, shared through the OS share sheet.
-
-There is no backend in v1 and no account. The app is fully functional offline because there is
-nothing to be online for. A backend (Node.js, then Python) arrives in Phase 3 as a learning
-objective and is not shipped.
-
-The schema is nevertheless built as though sync were coming: UUID primary keys, `updated_at` and
-soft deletes on every table, explicit schema versioning, and a repository interface between UI and
-data layer from the first commit. This is what makes Phase 3 an implementation rather than a
-rewrite.
+**`pubspec.yaml` is still the Flutter starter template.** None of the above is installed yet. Do not
+write code against a package before it is added, and do not add one without approval.
 
 ## Architecture
 
@@ -80,7 +78,8 @@ directory per feature, each split into `data/`, `domain/`, `presentation/`, `sha
 Features: `onboarding`, `entry`, `history`, `export`, `settings`.
 
 Navigation is a **custom router built on Navigator 2.0**, reached only through the abstract
-`AppRouter` contract. Do not add `go_router` or another navigation package.
+`AppRouter` contract. Do not add `go_router` or another navigation package. Details in
+`.claude/rules/code/routing-rules.md`.
 
 ### Dependency rule
 
@@ -91,14 +90,8 @@ Dependencies point inward: presentation → domain ← data.
 - Code used by more than one layer goes in the feature's `shared/`; code used by more than one
   feature goes in `core/`. Promote only when a second consumer exists, not in anticipation of one.
 
-#### Example
-
-Correct — `data/repo/entry_repository_impl.dart` imports `domain/repo/entry_repository.dart` and
-`domain/entities/entry.dart`.
-
-Incorrect — `domain/services/compute_slot_status.dart` imports `data/source/dto/entry_dto.dart`.
-The domain layer would then depend on a data-layer type. Map the DTO to an entity inside
-`data/repo/` instead.
+A `domain/services/` file importing a Drift row class is the violation to watch for: the domain
+layer would then depend on a data-layer type. Map the row to an entity inside `data/repo/` instead.
 
 ### Where things live
 
@@ -108,19 +101,16 @@ The domain layer would then depend on a data-layer type. Map the DTO to an entit
 | Data source | `data/repo/source/` | `data/source/` |
 | DTO | `data/repo/dto/` | `data/source/dto/` |
 
-`domain/repo/` holds repository interfaces and nothing else — data sources and DTOs are data-layer
-concerns end to end. ViewModels talk only to domain services, never to a repository implementation
-or a data source. Extra sub-folders for grouping inside a layer are fine.
+`domain/repo/` holds repository interfaces and nothing else. ViewModels talk only to domain
+services, never to a repository implementation or a data source.
 
-Slot status derivation, window computation, and the daily-average rules are **domain services**.
-They are pure functions over a schedule and a set of entries, and they must be unit-testable without
-a database.
+Slot status derivation, window computation, and the daily-average rules are **domain services** —
+pure functions over a schedule and a set of recordings, unit-testable without a database.
 
 ### GetIt and Riverpod — one job each
 
-- **GetIt** resolves dependencies: repositories, data sources, domain services, the notification
-  scheduler, the PDF generator. Registration lives in the feature's `shared/controllers/`.
-- **Riverpod** manages state only — ViewModels, `Notifier` / `AsyncNotifier`, what the UI watches.
+**GetIt** resolves dependencies: repositories, data sources, domain services. Registration lives in `shared/controllers/`.
+**Riverpod** manages state only — ViewModels.
 
 A provider whose only purpose is to construct and expose a dependency belongs in GetIt instead.
 Nothing mutable goes in GetIt: Riverpod cannot observe it, so it changes without notifying any
@@ -128,15 +118,8 @@ listener.
 
 ## Time handling
 
-Time is the main source of bugs in this app. Rules:
-
-- Every entry stores its `window_start`, `window_end`, and IANA `timezone`, denormalised at
-  creation. Entries stay self-describing even if the schedule history is lost.
-- `schedules` is append-only, each row carrying `effective_from`. Deriving the status of a past slot
-  uses the schedule in effect on that date — never the current one.
-- Windows are computed from local wall-clock time, so DST shifts them rather than breaking them.
-- Never use `DateTime.now()` directly in domain code. Inject a clock so slot-boundary behaviour can
-  be tested.
+Time is the main source of bugs in this app. Four rules; the full treatment is in
+`.claude/rules/code/coding-conventions.md` § Time.
 
 ## Working in this repo
 
@@ -149,25 +132,31 @@ Time is the main source of bugs in this app. Rules:
 
 After changing code:
 
-- `fvm dart analyze` — zero errors before you consider the task done.
-- Formatting follows `.vscode/settings.json`. Read it and match it; do not run `fvm dart format`
-  with default options, because the defaults ignore those settings and can reflow files.
+- `fvm dart analyze` — zero errors before you consider the task done. `analysis_options.yaml` is
+  strict in ways that shape how you write.
+- `fvm dart format .` — `analysis_options.yaml` sets `page_width: 120`, so the default 80-column
+  reflow does not happen. Never pass `--line-length`; it would disagree with CI.
 - `fvm dart run build_runner build --delete-conflicting-outputs` — only after touching annotated
   classes, including Drift tables.
 
 Every `dart` and `flutter` command takes the `fvm` prefix, because the repo pins its SDK through FVM
 and a bare command silently runs a different Flutter version.
 
-### Commands
+### Project skills and agents
 
-- Run the app: `fvm flutter run`
-- Run all tests: `fvm flutter test`
-- Run a single test file: `fvm flutter test test/widget_test.dart`
-- Run a single test by name: `fvm flutter test --plain-name "<test description>"`
-- Add a dependency: `fvm flutter pub add <package>`
-- Remove a dependency: `fvm flutter pub remove <package>`
-- Build an Android artifact: `fvm flutter build apk`
-- Build an iOS artifact: `fvm flutter build ipa`
+Run with `/name`; none of them load on their own.
+
+| Skill | Does |
+| --- | --- |
+| `/dart-review` | 12-area review of `lib/**/*.dart`, integrity first |
+| `/debug-code` | Diagnose a bug with minimal scanning; rules out intended behaviour first |
+| `/flutter-test` | Test plan → approval → execution, with the mandatory invariant suite |
+| `/dart-documentation` | Dartdoc standards, terminology, invariant comments |
+| `/git-flow` | Stage, Conventional Commit, push, with approval gates |
+| `/new-feature` | Scaffold a feature's Clean Architecture directories |
+
+Agents `code-reviewer`, `debugger`, and `doc-generator` wrap the first three plus documentation, and
+add their own approval gates. Do not run them on speculation — they edit files.
 
 ## Confirm first
 

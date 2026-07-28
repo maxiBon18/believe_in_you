@@ -12,10 +12,12 @@ access — everything comes from a ViewModel (`viewmodel-rules.md`).
 
 ## Naming and placement
 
-- Page file `<feature>_page.dart`; page class starts with `MoodDiary` (`MoodDiaryHomePage`).
-- Every page uses `MoodDiaryPage` as its root widget — it supplies the app chrome, safe-area
-  handling, and loading overlay wiring. A page that builds its own `Scaffold` bypasses all three.
-- Widget classes start with `MoodDiary` (`MoodDiaryScaleSelector`).
+- Page file `<feature>_page.dart` in `presentation/ux/pages/`; page class is
+  `BelieveInYou<Name>Page`.
+- Widget classes carry the same `BelieveInYou` prefix: `BelieveInYou<Name>`.
+- Every page uses the shared app page shell in `core/` as its root widget — it supplies the app
+  chrome, safe-area handling, and loading overlay wiring. A page that builds its own `Scaffold`
+  bypasses all three.
 - Feature widgets: `presentation/ux/widgets/`. Widgets used by two or more features:
   `lib/core/presentation/ux/widgets/`.
 
@@ -29,6 +31,8 @@ access — everything comes from a ViewModel (`viewmodel-rules.md`).
 - Pass `Key` to widgets rendered inside lists or behind conditionals, so element reuse doesn't carry
   the wrong state across.
 - Dispose every controller, subscription, and animation you create.
+- Navigation goes through the `AppRouter` contract, never `Navigator.push` with a widget literal
+  (`routing-rules.md`). The view decides *when* to navigate; the ViewModel never does.
 
 ## Performance
 
@@ -54,7 +58,7 @@ beyond the current day.
 - Colors: `lib/core/presentation/ux/theme/color.dart`. Theme components:
   `lib/core/presentation/ux/theme/theme.dart`.
 - Express a new design decision as a `ThemeData` token first. Only when the token model can't carry
-  it should you create a dedicated `MoodDiary*` widget.
+  it should you create a dedicated `BelieveInYou*` widget.
 - No user-visible string literals in widgets — route them through the app's localization layer.
   Strings are maintained in English and Italian.
 
@@ -98,4 +102,5 @@ The tone rules in `data-integrity-rules.md` § 5 are enforced here, since this i
 - Colour is never the only carrier of meaning. Completed, skipped, and locked slots differ in label
   and shape, not only in tint.
 - Platform differences go through `Platform` checks or conditional imports, never through runtime
-  feature guessing.
+  feature guessing. Writing either is **confirm-first** (`CLAUDE.md`) — ask before adding the first
+  one to a file.

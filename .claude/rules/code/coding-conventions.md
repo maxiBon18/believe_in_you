@@ -7,17 +7,22 @@ paths:
 
 # Coding Conventions
 
-`analysis_options.yaml` is the enforcement layer. These rules cover what the linter cannot check.
+`analysis_options.yaml` is the enforcement layer. These rules cover what the linter cannot check,
+plus the handful of lints strict enough to change how code is shaped.
+
+Names come from the fixed vocabulary in `CLAUDE.md` § Vocabulary. `recording`, not entry or log;
+`scale`, not score or rating. A symbol named off-vocabulary is a naming violation even when the
+casing is right.
 
 ## Naming
 
-| Element            | Convention                       | Example                               |
+| Element            | Convention                       | Shape                                 |
 | ------------------ | -------------------------------- | ------------------------------------- |
-| Files              | `snake_case` + type suffix       | `home_page.dart`, `entry_dto.dart`    |
-| Classes            | `PascalCase`                     | `RecordingEntity`                     |
-| Variables, methods | `camelCase`                      | `slotIndex`, `fetchRecordings()`      |
-| Private members    | `_` prefix                       | `_controller`, `_computeWindow()`     |
-| Booleans           | `is`/`has`/`should`/`can` prefix | `isOpen`, `hasRecording`, `canEdit`   |
+| Files              | `snake_case` + type suffix       | `<name>_page.dart`, `<name>_dto.dart` |
+| Classes            | `PascalCase`                     | `<Name>Entity`, `<Name>Service`       |
+| Variables, methods | `camelCase`                      | `<name>`, `fetch<Name>()`             |
+| Private members    | `_` prefix                       | `_controller`, `_compute()`           |
+| Booleans           | `is`/`has`/`should`/`can` prefix | `isOpen`, `hasValue`, `canEdit`       |
 
 File name by type — the suffix is how every other rule locates a file, so it is not optional:
 
@@ -34,6 +39,24 @@ File name by type — the suffix is how every other rule locates a file, so it i
 | Data source interface / impl| `<name>_source.dart` / `<name>_source_impl.dart` |
 | Test                        | `<name_of_file_under_test>_test.dart` |
 
+## What the linter already enforces
+
+`analysis_options.yaml` is stricter than `flutter_lints` alone, in ways that change how you write.
+These are not preferences — code that ignores them fails `fvm dart analyze`:
+
+| Rule | Consequence |
+| --- | --- |
+| `always_specify_types` | `final String name = …`, never `final name = …`. Type arguments too: `<String>[]`, `Map<String, Object?>{}` |
+| `always_use_package_imports` | `package:believe_in_you/…` everywhere. **No relative imports, not even within a feature** |
+| `always_declare_return_types` | Every function and method writes its return type, including `void` |
+| `always_put_required_named_parameters_first` | Required named parameters precede optional ones in the signature |
+| `prefer_single_quotes` | `'text'`, not `"text"` |
+| `constant_identifier_names` | `lowerCamelCase` constants — not `SCREAMING_CASE` |
+| `avoid_print` | `print()` is an error. See § Logging |
+
+`always_specify_types` and the "prefer records" guidance below coexist: a record still needs its
+type written out, `final (int, String) pair = …`.
+
 ## Typing
 
 - No `dynamic` unless an external API forces it; add a comment saying which one.
@@ -43,8 +66,9 @@ File name by type — the suffix is how every other rule locates a file, so it i
 - `@immutable` on classes whose fields are all final.
 - Prefer records over one-off classes when returning two or three values with no behavior.
 - Prefer exhaustive `switch` expressions over `if`/`else` chains on sealed types — the compiler
-  then catches every missed case when a new variant is added. `SlotStatus` is sealed for exactly
-  this reason: adding a variant must break every site that handles statuses.
+  then catches every missed case when a new variant is added. Slot status is the case where this
+  matters most: adding a state must break every site that renders one, so model it as a sealed type
+  and never add a `default` branch.
 - Use `=>` for single-expression functions and getters.
 
 ## Constants and magic values
@@ -63,8 +87,8 @@ drift apart. User-visible strings are covered by the localization rule in
 - A nullable return type needs a doc comment stating what `null` means. If `null` has no distinct
   meaning, return a non-nullable type with a default.
 - **Never `??` a default onto a recorded value.** A missing mood value is missing; a missing
-  emotion set is missing. `scale ?? 3` and `emotions ?? const []` are bugs, not defensive coding.
-  See `data-integrity-rules.md`.
+  emotion set is missing. A neutral scale or an empty emotion list supplied by `??` is a bug, not
+  defensive coding. See `data-integrity-rules.md`.
 
 ## Time
 
@@ -74,7 +98,11 @@ Time is this app's main source of bugs, and most of them are untestable if the c
   Inject a `Clock` through the constructor. Presentation may read the clock through its ViewModel,
   never directly.
 - Slot windows are computed from **local wall-clock time**, so a DST change shifts them rather than
-  breaking them. Store the IANA timezone identifier alongside every timestamp.
+  breaking them. Never build a boundary by adding a `Duration` to an instant: a local day is 23 or
+  25 hours across a transition.
+- A stored wall-clock timestamp cannot be re-interpreted later without knowing its zone. How the
+  IANA timezone identifier travels with a persisted instant is a schema decision — make it
+  explicitly when the store is designed, do not leave it implicit.
 - Compare instants, not formatted strings, and never compare a `DateTime` in one zone against one
   in another without normalizing first.
 - A test that depends on the real clock is a flaky test. Advance a fake clock instead.
@@ -114,12 +142,13 @@ because it does three things, split it.
 
 ## Formatting
 
-Line width is **120**. `dart format` defaults to 80, so the width is set in `analysis_options.yaml`:
+Line width is **120**, set once in `analysis_options.yaml`:
 
 ```yaml
 formatter:
   page_width: 120
 ```
 
-If that key is missing, add it rather than passing `--line-length` by hand — otherwise CI and
-local runs disagree.
+`fvm dart format .` reads that key, so it needs no arguments. Never pass `--line-length`: a
+hand-supplied width diverges from CI the moment someone forgets it. `.vscode/settings.json` sets
+`editor.rulers: [120]` to match visually — that is a guide only, and changing it formats nothing.

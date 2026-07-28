@@ -2,6 +2,7 @@
 name: flutter-test
 description: "Analyze the Mood Diary app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob
 ---
 
 # Flutter Test Skill
@@ -21,7 +22,10 @@ trees.
 1. `find lib -type f -name "*.dart" | head -80`
 2. `find test -type f -name "*.dart" 2>/dev/null | head -40`
 3. `find integration_test -type f -name "*.dart" 2>/dev/null | head -20`
-4. Read `pubspec.yaml` → confirm Riverpod version, Drift, test deps.
+4. Read `pubspec.yaml` → confirm Riverpod version, Drift, and test deps.
+   `pubspec.yaml` may still be the Flutter starter template with none of them present. That is not
+   a blocker for planning — plan against the architecture, and let STOP 2 surface everything the
+   plan needs installed. Do not silently reduce the plan to what happens to be installed.
    Riverpod ViewModels are tested with `ProviderContainer.test()` and provider overrides, not by
    mocking `ref` (see `.claude/rules/code/testing-rules.md`).
 

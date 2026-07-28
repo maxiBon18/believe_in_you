@@ -1,8 +1,8 @@
 ---
 description: "Dependency injection with GetIt, and its boundary with Riverpod"
 paths:
-  - "lib/*/shared/controllers/di.dart"
   - "lib/*/shared/controllers/*.dart"
+  - "lib/main.dart"
 ---
 
 # Dependency Injection
@@ -11,8 +11,8 @@ paths:
 
 - Feature dependencies: `lib/<feature>/shared/controllers/di.dart`.
 - Dependencies used by two or more features: `lib/core/shared/controllers/di.dart`.
-- Register in construction order — clock → database → data source → repository → service — so a
-  dependency is always available before the thing that needs it.
+- Register in construction order — clock → database → data source → repository → service → router —
+  so a dependency is always available before the thing that needs it.
 
 ## GetIt and Riverpod split
 
@@ -20,6 +20,7 @@ paths:
 | ------------------------------------------------------------- | --------- |
 | Clock, Drift database, data sources, repositories, services    | GetIt     |
 | Notification scheduler, PDF generator, file share adapter      | GetIt     |
+| `AppRouter`                                                    | GetIt     |
 | ViewModels / notifiers and all UI-facing state                 | Riverpod  |
 
 Two containers holding the same object is how you end up with two instances and a bug that only
@@ -28,20 +29,24 @@ that reads from `GetIt.I`, so there is exactly one lookup path.
 
 ## Core registrations
 
-Three things are registered in `core/` because more than one feature needs them, and because
+Some things are registered in `core/` because more than one feature needs them, and because
 registering them twice would be a correctness bug rather than a style problem:
 
 - **`Clock`** — every time-dependent service takes it. Tests override it with a fake before
   anything that reads it is resolved.
 - **The Drift database** — eager singleton, one instance for the process. A second instance means
   two connections to the same file and a migration race.
-- **`SlotWindowService`** — used by entry, history, export, and the notification scheduler. Its
-  output must be identical across all four.
+- **Window computation** — read by entry, history, export, and the notification scheduler. Its
+  output must be identical across all four, so it is registered once and never reconstructed.
+- **`AppRouter`** — eager singleton. The router owns the navigation stack; a second instance means
+  two stacks and guards that run against the wrong one (`routing-rules.md`).
+
+Promote anything else to `core/` only once a second feature actually consumes it.
 
 ## Registration style
 
 - Register against the **interface**, supply the implementation:
-  `getIt.registerLazySingleton<RecordingRepository>(() => RecordingRepositoryImpl(getIt()))`.
+  `getIt.registerLazySingleton<SomeRepository>(() => SomeRepositoryImpl(getIt()))`.
   Registering a concrete type makes it impossible to swap in a fake for tests.
 - `registerLazySingleton` for anything stateless and reusable; `registerFactory` when each caller
   needs a fresh instance. Reach for `registerSingleton` only when construction must happen eagerly

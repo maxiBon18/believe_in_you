@@ -3,12 +3,24 @@
 ## Tools
 
 - `git` CLI
-- `husky` (git hooks in `.husky/`)
-- `@commitlint/cli` (commit message validation)
+- `husky` — git hooks in `.husky/`
+- `@commitlint/cli` + `@commitlint/config-conventional` — message validation, configured in `commitlint.config.js`
+
+## Hooks that actually exist
+
+Check `.husky/` rather than trusting this list if something behaves unexpectedly.
+
+| Hook | Runs | Note |
+| --- | --- | --- |
+| `pre-commit` | `npm test` | `package.json`'s `test` script is currently empty, so this passes trivially. It is a placeholder for `fvm flutter test`, not a safety net — do not treat a green commit as a green suite. |
+| `commit-msg` | `npx commitlint --edit "$1"` | Rejects a message that is not a valid Conventional Commit. |
+
+There is no `post-commit` hook. Hooks fire from Git; never run them by hand, and never pass
+`--no-verify`.
 
 ## Conventional Commits Format
 
-```
+```text
 <type>(<scope>): <short description>
 
 <body (optional)>
@@ -18,25 +30,37 @@
 
 ## Allowed Types
 
-| Type       | When to use                                |
-| ---------- | ------------------------------------------ |
-| `feat`     | New feature                                |
-| `fix`      | Bug fix                                    |
-| `refactor` | Code restructuring without behavior change |
-| `docs`     | Documentation only                         |
-| `revert`   | Reverting a previous commit                |
+| Type       | When to use                                   |
+| ---------- | --------------------------------------------- |
+| `feat`     | New user-visible behaviour                    |
+| `fix`      | Bug fix                                       |
+| `refactor` | Restructuring with no behaviour change        |
+| `docs`     | Documentation, including `.claude/` config    |
+| `test`     | Adding or changing tests only                 |
+| `chore`    | Tooling, dependencies, build config           |
+| `revert`   | Reverting a previous commit                   |
+
+`config-conventional` accepts more types than this. The narrower list is a project convention, so commitlint will not catch a stray `style:` or `perf:` — you have to.
 
 ## Scope
 
-- Use the feature or module name (e.g., `registration`, `auth`, `core`, `profile`).
-- If multiple features are involved, use the most relevant one.
+Use the feature or module name: `entry`, `history`, `export`, `settings`, `onboarding`, `core`, or
+`config` for examples, for tooling and repo configuration. If more than one is involved, use the most relevant.
 
 ## Rules
 
-- Short description: imperative mood, lowercase, no period, max 72 characters.
-- Body: explain WHAT changed and WHY (not HOW), wrap at 100 characters.
-- Footer: reference issue/ticket if available (e.g., `Refs: #123`).
-- Breaking changes: add `BREAKING CHANGE:` in the footer.
-- Husky hooks (`pre-commit`, `commit-msg`, `post-commit`) are triggered automatically by Git. Do NOT execute them manually.
-- You MUST stop and ask for human confirmation at specific steps. Do NOT proceed to the next step without explicit user approval.
+- Short description: imperative mood, lowercase, no trailing period, max 72 characters.
+- Body: WHAT changed and WHY, not HOW. Wrap at 100 characters.
+- Footer: `Refs: #123` for an issue.
+- Breaking changes: `BREAKING CHANGE:` in the footer.
+- Use the vocabulary in `CLAUDE.md` § Vocabulary. A commit that says "entry value" when it means
+  "scale" makes the history unsearchable by the term the code uses.
 
+## What the body is for in this project
+
+Most commits do not need one. These do:
+
+- A change touching a data-integrity invariant — name the invariant and say which way it moved.
+- A schema change or migration — say what the migration preserves.
+- A change to slot-window or status derivation — say which boundary case moved.
+- A deliberate non-fix, where the behaviour looks wrong and is specified.

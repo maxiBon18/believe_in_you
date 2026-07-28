@@ -1,5 +1,9 @@
 # Examples
 
+Class and method names below are placeholders — nothing here is a naming decision. What the examples
+calibrate is the *content* of a comment: what it explains, in how many sentences, and when it cites a
+rule. Use whatever the code you are documenting is actually called.
+
 ## 1. Class with public API — normal case
 
 ```dart
@@ -8,16 +12,16 @@
 ///
 /// Status is never persisted: it is computed on every read from the schedule
 /// that was in effect on that date. See `data-integrity-rules.md` § 2.
-class SlotStatusService {
+class ExampleStatusService {
   /// Returns the status of the slot described by [window].
   ///
   /// Pass the [recording] for that slot, or `null` if none was saved.
   /// [installedAt] is the instant the first schedule was written, used to tell
   /// a genuine skip from a slot that closed before the app existed.
-  SlotStatus statusOf({
-    required SlotWindow window,
+  ExampleStatus statusOf({
+    required ExampleWindow window,
     required DateTime installedAt,
-    required RecordingEntity? recording,
+    required ExampleRecording? recording,
   }) {
     // ...
   }
@@ -33,7 +37,7 @@ class SlotStatusService {
 /// reading is indistinguishable from a real one downstream, and unlogged slots
 /// are disproportionately bad ones — so a default would flatten the trend
 /// exactly where the signal is strongest. See `data-integrity-rules.md` § 1.
-Future<RecordingEntity?> findBySlot({required DateTime date, required int slotIndex});
+Future<ExampleRecording?> findBySlot({required DateTime date, required int index});
 ```
 
 Without the second paragraph, the next reader adds `?? neutral` to remove the nullable and the
@@ -47,7 +51,7 @@ record quietly starts lying.
 /// The not-applicable check runs before any clock comparison: a slot that
 /// closed before installation must never surface as a skip, and comparing it
 /// against `now` first would classify it as one.
-SlotStatus _classify(SlotWindow window, DateTime installedAt) {
+ExampleStatus _classify(ExampleWindow window, DateTime installedAt) {
   // ...
 }
 ```
@@ -56,7 +60,7 @@ SlotStatus _classify(SlotWindow window, DateTime installedAt) {
 
 ```dart
 /// The state of one daily slot, as shown on the entry screen.
-enum SlotStatusKind {
+enum ExampleStatusKind {
   /// The window has not opened yet. Visible, not editable.
   locked,
 
@@ -75,8 +79,8 @@ enum SlotStatusKind {
 }
 ```
 
-`skipped` and `notApplicable` look interchangeable from the names and are not — which is exactly why
-both need a line.
+The last two look interchangeable from their names and are not — which is exactly why both need a
+line.
 
 ## 5. Removing a bad doc comment — edge case
 
@@ -84,9 +88,9 @@ Before (bad — restates the name):
 
 ```dart
 /// The recording repository.
-class RecordingRepository {
+class ExampleRepository {
   /// Gets a recording by ID.
-  Future<RecordingEntity> getById(String id) async { ... }
+  Future<ExampleRecording> getById(String id) async { ... }
 }
 ```
 
@@ -97,12 +101,12 @@ After (good — explains purpose and behavior):
 ///
 /// Reads never create rows: a missing recording is returned as `null`, and the
 /// domain layer decides what its absence means.
-class RecordingRepository {
+class ExampleRepository {
   /// Fetches the recording with the given [id].
   ///
   /// Returns `null` if no matching row exists. Throws [StorageException] if the
   /// database cannot be read.
-  Future<RecordingEntity?> getById(String id) async { ... }
+  Future<ExampleRecording?> getById(String id) async { ... }
 }
 ```
 
@@ -118,12 +122,12 @@ class RecordingRepository {
 /// ```dart
 /// final windows = service.windowsFor(
 ///   date: DateTime(2026, 3, 14),
-///   schedule: Schedule(wake: TimeOfDay(hour: 7, minute: 0),
-///                      sleep: TimeOfDay(hour: 23, minute: 0)),
+///   schedule: ExampleSchedule(wake: TimeOfDay(hour: 7, minute: 0),
+///                             sleep: TimeOfDay(hour: 23, minute: 0)),
 /// );
 /// // windows[0].start == 07:00, windows[2].end == 23:00
 /// ```
-List<SlotWindow> windowsFor({required DateTime date, required ScheduleEntity schedule}) {
+List<ExampleWindow> windowsFor({required DateTime date, required ExampleSchedule schedule}) {
   // ...
 }
 ```

@@ -7,7 +7,7 @@
    `data-integrity-rules.md` before reading any code.
 2. **Minimize scanning.** Ask the user for suspect files. Never scan the full codebase unless all
    narrower strategies have failed.
-3. **Match the symptom to a known failure mode** (below) before following a stack trace. Six
+3. **Match the symptom to a known failure mode** (below) before following a stack trace. Seven
    categories cover most of what goes wrong here, and each maps to a handful of files.
 4. **Stack trace second.** Where one exists, work outward from the first project frame.
 5. **Reproduce the path.** Trace the flow: user action → widget → ViewModel → domain service →
@@ -17,31 +17,32 @@
 
 ## Common failure modes
 
-Six categories, in rough order of how often they are the answer.
+Seven categories, in rough order of how often they are the answer. Each names the *logic* to open,
+not a class — find whatever the feature actually called it.
 
 ### 1. Slot windows and time
 
 **Symptoms:** wrong slot open; a slot open twice or never; entry rejected as closed when it looks
 open; slots shifted by an hour; a slot missing entirely on one date.
 
-**Look at:** `SlotWindowService`, `SlotStatusService`, the schedule repository, anything calling
+**Look at:** window computation, status derivation, schedule persistence, anything calling
 `DateTime.now()` outside a clock.
 
 **Usual causes:** a real clock somewhere instead of the injected one; midnight crossing handled with
 date arithmetic instead of span arithmetic; a DST transition inside a window; comparing a UTC
-instant to a local one; a half-open interval treated as closed, so `windowEnd` belongs to two slots
-or none.
+instant to a local one; a half-open interval treated as closed, so the closing instant belongs to
+two slots or none.
 
 ### 2. Schedule changes rewriting history
 
 **Symptoms:** yesterday's slots move; a past day suddenly shows a skip; the completion rate changes
 for a week that is over.
 
-**Look at:** the `schedules` table writes, and every read that resolves a schedule for a date.
+**Look at:** every schedule write, and every read that resolves a schedule for a date.
 
-**Usual causes:** a schedule row updated instead of appended; a read using the *current* schedule
-rather than the one effective on that date; window boundaries not denormalized onto the entry at
-write time.
+**Usual causes:** a schedule updated in place instead of superseded; a read using the *current*
+schedule rather than the one in effect on that date; a recording that cannot reconstruct its own
+window without the schedule history.
 
 ### 3. Notifications
 
@@ -60,12 +61,13 @@ slot missing or racing the save.
 **Symptoms:** crash on launch after an update; recordings missing after an update; a unique-
 constraint failure on save; the same slot appearing twice.
 
-**Look at:** `schemaVersion`, the migration strategy, and the unique constraint on
-`(date(refersTo), slotIndex)`.
+**Look at:** the schema version, the migration strategy, and the constraint enforcing one recording
+per slot.
 
-**Usual causes:** `schemaVersion` not incremented; a migration that recreates a table without
+**Usual causes:** the schema version not incremented; a migration that recreates a table without
 copying; two database instances because it was registered lazily in two places; a save path that
-inserts instead of upserting.
+inserts instead of upserting; a uniqueness key built on the recording's timestamp rather than the
+slot's own identity, so a post-midnight slot duplicates.
 
 **Handle with care.** These are the only bugs in this app that can destroy data with no backup
 anywhere. Diagnose fully before touching anything, and get approval before running a repair.
@@ -75,15 +77,29 @@ anywhere. Diagnose fully before touching anything, and get approval before runni
 **Symptoms:** stale values after returning from another screen; "used after dispose"; the entry form
 not updating when the window closes; a save landing twice.
 
-**Look at:** the entry ViewModel, provider lifetimes, `ref.watch` vs `ref.read`, missing
+**Look at:** the entry screen's ViewModel, provider lifetimes, `ref.watch` vs `ref.read`, missing
 `if (!ref.mounted) return;` after awaits.
 
-### 6. Chart and summary rendering
+### 6. Navigation and guards
+
+**Symptoms:** the app opens on the wrong screen after a cold start; back exits the app from a
+mid-flow screen; a notification tap lands on the wrong slot; onboarding shows again after it was
+completed; a crash on launch reading a schedule that isn't there.
+
+**Look at:** the `AppRouter` implementation, the `RouteInformationParser`, and the two guards
+(`routing-rules.md` § Guards).
+
+**Usual causes:** a guard reading state asynchronously and resolving before it arrives; a
+notification payload cast instead of validated; navigation performed with `Navigator.push` so the
+router's stack and the real stack diverge; a `switch` over `AppRoute` with a `default` branch that
+swallowed a new variant.
+
+### 7. Chart and summary rendering
 
 **Symptoms:** a gap drawn as zero; a line bridging a missing day; a one-recording day rendered as
 complete; the export disagreeing with the on-screen chart.
 
-**Look at:** `MoodSummaryService` and the chart adapter.
+**Look at:** summary computation and the chart adapter.
 
 **Usual causes:** a missing value coerced to zero in the plotting layer rather than excluded; the
 incomplete-day marker not wired; the export recomputing the summary with different rules instead of
@@ -91,9 +107,9 @@ reusing the service.
 
 ## Reproducing time-dependent bugs
 
-Do not wait for a real boundary. Advance the fake `Clock` to one millisecond either side of
-`windowStart` and `windowEnd`, and assert. Any bug reproduced this way should leave a permanent test
-behind — see `.claude/rules/code/testing-rules.md` § Time.
+Do not wait for a real boundary. Advance the fake `Clock` to one millisecond either side of the
+window's opening and closing instants, and assert. Any bug reproduced this way should leave a
+permanent test behind — see `.claude/rules/code/testing-rules.md` § Time.
 
 ## What never counts as a fix
 

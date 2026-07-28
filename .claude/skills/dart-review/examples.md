@@ -1,5 +1,8 @@
 # Examples
 
+File paths and symbol names below are placeholders — the point of each example is the *shape* of the
+finding, not the identifier. Use whatever the code under review is actually called.
+
 ## 1. Clean review — all checks passed
 
 | Area                | Result | Issues                                        |
@@ -44,58 +47,59 @@ All checks passed. Verified 4 files, 0 violations, 0 warnings.
 
 **1. Data Integrity — Default scale substituted for a missing recording**
 
-- **File:** `lib/entry/data/repo/recording_dto_mapper.dart:31`
+- **File:** `lib/entry/data/repo/<mapper>.dart:31`
 - **Rule:** `data-integrity-rules.md` § 1 — "Never synthesize a mood value."
-- **Issue:** `scale: row.scale ?? 3` supplies a neutral value when the column is null.
+- **Issue:** The row → entity mapping supplies a neutral `3` with `??` when the stored scale is
+  null.
 - **Why it matters:** This writes a value the user never reported, and it is indistinguishable
   downstream from a real one. The bias is directional — unlogged slots are disproportionately bad
   ones — so the chart flattens exactly where the signal is strongest, and the psychologist reads
   the fabricated 3 as an observation.
-- **Fix:** Make the mapper return `RecordingEntity?` and let `SlotStatusService` decide what an
-  absent row means. Delete the `??`.
+- **Fix:** Make the mapper return a nullable entity and let the status-derivation service decide
+  what an absent row means. Delete the `??`.
 
 **2. Time Correctness — `DateTime.now()` in a domain service**
 
-- **File:** `lib/entry/domain/services/slot_status_service.dart:22`
+- **File:** `lib/entry/domain/services/<name>_service.dart:22`
 - **Rule:** `coding-conventions.md` § Time — "Never call `DateTime.now()` in `domain/` or `data/`."
-- **Issue:** `final now = DateTime.now();` instead of `_clock.now()`.
-- **Why it matters:** Slot-boundary behaviour becomes untestable. The rule that a save at
-  `windowEnd - 1ms` succeeds and one at `windowEnd` does not cannot be covered without a fake clock,
-  and that boundary is the one the no-editing invariant rests on.
-- **Fix:** Inject `Clock` through the constructor and call `_clock.now()`. Register it in
+- **Issue:** `final now = DateTime.now();` instead of reading the injected clock.
+- **Why it matters:** Slot-boundary behaviour becomes untestable. The rule that a save one
+  millisecond before the window closes succeeds and one exactly at the close does not cannot be
+  covered without a fake clock, and that boundary is the one the no-editing invariant rests on.
+- **Fix:** Inject `Clock` through the constructor and call it. Register it in
   `core/shared/controllers/di.dart` per `di-rules.md` § Core registrations.
 
 **3. State Management — `ref.read` in build method**
 
-- **File:** `lib/entry/presentation/ux/entry_page.dart:32`
+- **File:** `lib/entry/presentation/ux/<name>_page.dart:32`
 - **Rule:** `viewmodel-rules.md` § Riverpod — "`ref.watch` inside `build`; `ref.read` inside
   callbacks and event handlers only."
-- **Issue:** `ref.read(slotEntryViewModelProvider)` inside `build()` prevents the widget rebuilding
-  when the slot transitions from open to closed.
+- **Issue:** `ref.read` on the entry ViewModel's provider inside `build()` prevents the widget
+  rebuilding when the slot transitions from open to closed.
 - **Why it matters:** The window can close while the screen is visible. Without a rebuild the form
   stays editable and a save can land after the window has shut.
-- **Fix:** Replace with `ref.watch(slotEntryViewModelProvider)`.
+- **Fix:** Replace with `ref.watch`.
 
 **4. Privacy & Security — Note text written to log**
 
-- **File:** `lib/entry/presentation/viewmodel/slot_entry_viewmodel.dart:58`
+- **File:** `lib/entry/presentation/viewmodel/<name>_viewmodel.dart:58`
 - **Rule:** Code Review § Privacy & Security — "Note text, emotion selections, and scale values must
   never be logged."
 - **Issue:** `log('saving draft: $draft')` interpolates the full draft, including the note.
-- **Fix:** Log the slot index and status transition only: `log('saving slot $slotIndex')`.
+- **Fix:** Log the slot identifier and the status transition only.
 
 ### ⚠️ Warnings
 
 **1. Code Quality — Inconsistent naming**
 
-- **File:** `lib/entry/domain/services/mood_summary_service.dart:15`
+- **File:** `lib/history/domain/services/<name>_service.dart:15`
 - **Rule:** `coding-conventions.md` § Naming — "Use lowerCamelCase for variables and methods."
 - **Issue:** Method named `Compute_Average` instead of `computeAverage`.
 - **Fix:** Rename to `computeAverage`.
 
 **2. Error Handling — Missing feedback on failed save**
 
-- **File:** `lib/entry/presentation/ux/entry_page.dart:71`
+- **File:** `lib/entry/presentation/ux/<name>_page.dart:71`
 - **Rule:** `viewmodel-rules.md` § Entry ViewModel specifics — "A failed save leaves the form intact
   and surfaces an error the user can retry from."
 - **Issue:** The `AsyncError` state is handled by returning an empty `SizedBox`, so a failed save is
@@ -104,11 +108,11 @@ All checks passed. Verified 4 files, 0 violations, 0 warnings.
 
 ## 3. Intended behaviour reported as a finding — how to handle it
 
-A reviewer flagged that `MoodSummaryService` produces no data point for a day with no recordings,
-and proposed carrying the previous day's value forward so the chart line stays continuous.
+A reviewer flagged that summary computation produces no data point for a day with no recordings, and
+proposed carrying the previous day's value forward so the chart line stays continuous.
 
 **This is not a finding.** The broken line is the specified behaviour
-(`data-integrity-rules.md` § 4, `business_analysis_complete.md` §4.8). Record it as follows and do
+(`data-integrity-rules.md` § 4, `business_analysis_en.md` §4). Record it as follows and do
 not open a violation:
 
 > Not a violation — a day with zero recordings intentionally yields no point. Carrying a value

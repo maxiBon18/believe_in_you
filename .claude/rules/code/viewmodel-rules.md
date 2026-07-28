@@ -16,14 +16,14 @@ view's interactions. It holds presentation logic; business rules stay in `domain
   generated provider and its notifier are one unit, and splitting them adds an import for nothing.
 - Call domain **services** only. Do not import repositories, DTOs, Drift, or anything else from
   `data/`.
-- No `BuildContext` in a ViewModel. Navigation and dialogs are the view's job; the ViewModel exposes
-  state the view reacts to.
+- No `BuildContext` in a ViewModel, and no `AppRouter`. Navigation and dialogs are the view's job;
+  the ViewModel exposes state the view reacts to (`routing-rules.md` § The AppRouter contract).
 - **No domain logic.** A ViewModel does not compute slot status, window boundaries, or a daily
   average — it asks a service. If a computation would still be correct in a CLI version of this app,
   it is in the wrong place.
-- **No clock.** Do not call `DateTime.now()` to decide whether a slot is open. Ask
-  `SlotStatusService`, which takes the injected clock. A ViewModel that reads the wall clock cannot
-  be tested at a slot boundary.
+- **No clock.** Do not call `DateTime.now()` to decide whether a slot is open. Ask the domain
+  service that derives status, which takes the injected clock. A ViewModel that reads the wall clock
+  cannot be tested at a slot boundary.
 
 ## Riverpod
 
@@ -60,19 +60,21 @@ The entry screen is the one place where a state bug costs data, so it has extra 
 - **Never construct a recording with a default scale.** The form's initial state is "nothing
   selected", and Save stays disabled until a scale and at least one emotion exist.
 
+The shape, illustrative only — class, state, and provider names are chosen when the screen is built:
+
 <example>
 
 ```dart
 @riverpod
-class SlotEntryViewModel extends _$SlotEntryViewModel {
+class ExampleViewModel extends _$ExampleViewModel {
   @override
-  Future<SlotEntryState> build(DateTime date, int slotIndex) =>
-      ref.read(slotQueryServiceProvider).load(date: date, slotIndex: slotIndex);
+  Future<ExampleState> build(DateTime date, int index) =>
+      ref.read(exampleQueryServiceProvider).load(date: date, index: index);
 
-  Future<void> save(SlotDraft draft) async {
+  Future<void> save(ExampleDraft draft) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(
-      () => ref.read(recordingServiceProvider).save(draft),
+      () => ref.read(exampleWriteServiceProvider).save(draft),
     );
     if (!ref.mounted) return;
     state = result;
@@ -80,3 +82,6 @@ class SlotEntryViewModel extends _$SlotEntryViewModel {
 }
 ```
 </example>
+
+Two things in it are not illustrative: `AsyncValue.guard` around the write, so a failure lands in
+`AsyncError` rather than escaping, and the `ref.mounted` check after the await.

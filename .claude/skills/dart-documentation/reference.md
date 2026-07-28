@@ -16,14 +16,15 @@
 
 ## Terminology
 
-Fixed vocabulary. Using two words for one concept is how a rule stops being findable.
+Fixed vocabulary, mirroring `CLAUDE.md` § Vocabulary. Using two words for one concept is how a rule
+stops being findable. If this table and `CLAUDE.md` ever disagree, `CLAUDE.md` wins.
 
 | Term | Means | Not |
 | --- | --- | --- |
 | **recording** | One saved observation for one slot | entry, log, record |
 | **slot** | One of the three daily moments | period, session, timeslot |
 | **window** | The time range a slot is open for | interval, range |
-| **schedule** | A wake/sleep pair with an `effectiveFrom` date | settings, times |
+| **schedule** | A wake/sleep pair that applies from a given date onward | settings, times |
 | **skipped** | A slot whose window closed with no recording | missed, empty, blank |
 | **not applicable** | A slot whose window closed before installation | skipped |
 | **scale** | The 1–5 value | score, rating, mood level |
@@ -60,8 +61,8 @@ this app deliberately does not have.
 - **Always document a nullable return type**, stating what `null` means. In this codebase `null`
   frequently means "the user did not record anything", which is a load-bearing distinction, not an
   edge case.
-- **Always document sealed-type variants.** Each `SlotStatus` variant needs a line saying what
-  produces it, because the difference between `skipped` and `notApplicable` is not inferable from
+- **Always document sealed-type variants.** Each slot-status variant needs a line saying what
+  produces it, because the difference between *skipped* and *not applicable* is not inferable from
   the names.
 - Consider library-level doc comments (`/// {@category ...}`) for general overviews.
 - Include code samples where they clarify usage.

@@ -22,32 +22,31 @@ This is the most serious defect found in review. Unlogged evenings are dispropor
 evenings, so imputing a neutral value systematically replaces the worst data with the blandest —
 and the clinician reads the result as an observation.
 
-Concretely, all of these are bugs:
+Concretely, all of these are bugs, whatever the surrounding code is called:
 
-```dart
-final scale = row.scale ?? 3;                       // no
-double avg(List<int?> v) => v.map((e) => e ?? 3)... // no
-if (recordings.isEmpty) return neutralRecording;    // no
-chart.interpolateMissing = true;                    // no
-```
+- `??` supplying a scale when the stored value is absent
+- an average that maps missing values to a neutral number before summing
+- a lookup that returns a placeholder observation when no row matched
+- a chart configured to interpolate across a gap
 
 ## 2. A row exists only because the user saved it
 
-`entries` holds real observations and nothing else.
+The recording store holds real observations and nothing else.
 
 - No background job creates rows at the start of a day.
-- No `status` column. Status is derived at read time by a domain service.
+- No persisted status column. Status is derived at read time by a domain service.
 - Reading a slot must never write one.
 
-`SKIPPED` and `NOT_APPLICABLE` are computed from the schedule in effect on that date plus the
+*Skipped* and *not applicable* are computed from the schedule in effect on that date plus the
 absence of a row. If you find yourself wanting to persist them, the derivation is in the wrong
 place.
 
 ## 3. No editing after the window closes
 
 A recording is editable while its slot window is open and permanently read-only afterwards. There
-is no backfill path and no "recorded late" flag, which is why `recorded_at` always falls inside
-`[window_start, window_end)` and no provenance flag is needed to interpret the data.
+is no backfill path and no "recorded late" flag, which is why a recording's timestamp always falls
+inside its own slot window — half-open, so the closing instant belongs to no slot — and no
+provenance flag is needed to interpret the data.
 
 A skipped slot stays skipped. Do not add a UI affordance to fill it in.
 
@@ -90,7 +89,7 @@ This is the developer's own clinical record and there is no backup anywhere else
 
 - Every schema change ships with a migration and a migration test.
 - No destructive migration — no column drops that discard data, no table recreation without copy.
-- `schemaVersion` is incremented explicitly, never inferred.
+- The schema version is incremented explicitly, never inferred.
 - Confirm before writing any migration (`CLAUDE.md` § Confirm first).
 
 ## When a requirement conflicts with an invariant

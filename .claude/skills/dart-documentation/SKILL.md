@@ -2,6 +2,7 @@
 name: dart-documentation
 description: "Document Dart code with dartdoc comments. Use when asked to write, review, or improve doc comments in lib/**/*.dart files. Covers public APIs, private non-obvious code, invariant-carrying services, and library-level docs."
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob
 ---
 
 # Dart Documentation Skill
@@ -47,13 +48,14 @@ obvious version and silently break the record.
 
 Treat these as requiring a *why* comment, not just a *what*:
 
-- The four domain services in `domain-layer-rules.md` § Services this app owns.
-- Any branch ordering that looks arbitrary but is not (`notApplicable` checked before the clock
+- The four bodies of domain logic in `domain-layer-rules.md` § Services — window computation, status
+  derivation, mood summarisation, emotion summarisation — whatever they ended up being called.
+- Any branch ordering that looks arbitrary but is not (*not applicable* established before the clock
   comparisons, for instance).
 - Any place a nullable type is deliberately kept nullable rather than defaulted.
-- Any absence of an obvious convenience — no `Recording.empty()`, no backfill method, no
-  interpolation flag.
-- Append-only tables and the reason a row is never updated.
+- Any absence of an obvious convenience — no `empty()` factory, no backfill method, no interpolation
+  flag.
+- Any table that is never updated in place, and the reason.
 
 The comment states the **clinical consequence**, in one sentence, and cites the rule. Not "returns
 null when absent" but "returns null rather than a neutral value — a synthesized reading is

@@ -2,6 +2,7 @@
 name: debug-code
 description: "Diagnose and fix bugs in the Mood Diary Flutter project. Use when the user reports a bug, error, crash, unexpected behavior, or asks to debug an issue. Requires a problem description; optionally accepts error messages, stack traces, and screenshots."
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob
 ---
 
 # Debug Skill
@@ -50,7 +51,7 @@ ones:
 | "A one-recording day shows the same as a three-recording day" | Bug **only** if the incomplete marker is missing. The average itself is correct — § 4. |
 
 If the report is intended behaviour, stop and say so, citing the rule and
-`business_analysis_complete.md`. Offer the underlying reasoning, not just the rule number — the user
+`business_analysis_en.md`. Offer the underlying reasoning, not just the rule number — the user
 wrote the rule and may still be right that the *presentation* needs work even when the *behaviour*
 does not.
 
@@ -67,7 +68,7 @@ Scan **one level at a time**. Stop as soon as the root cause is identified.
 **Level 0 — Match against known failure modes:**
 
 - Read [reference.md](reference.md) § Common failure modes. Most bugs in this app fall into one of
-  six categories, each with a small, known set of files. If the symptom matches a category, read
+  seven categories, each with a small, known set of files. If the symptom matches a category, read
   those files first — this is usually cheaper than following a stack trace.
 
 **Level 1 — Extract from error context:**

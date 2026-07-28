@@ -42,8 +42,10 @@ needs and `data/` supplies it. That inversion is what keeps the dependency arrow
 - Entities model the app's concepts, not the storage format. If a field only exists because Drift
   needs it, it belongs on the row class instead.
 - Prefer immutable entities with value equality.
-- `SlotStatus` is a **sealed** type (`Locked`, `Open`, `Completed`, `Skipped`, `NotApplicable`).
-  Handle it with exhaustive `switch` so that adding a variant breaks every site that must change.
+- Slot status is a **sealed** type, not an enum with a `default` branch anywhere. Its states are
+  distinguishable and non-interchangeable — in particular *skipped* and *not applicable* are
+  different facts about a closed window. Handle it with exhaustive `switch` so that adding a state
+  breaks every site that must change.
 
 ## Services
 
@@ -57,43 +59,27 @@ needs and `data/` supplies it. That inversion is what keeps the dependency arrow
 - **Inject the clock.** No `DateTime.now()` anywhere in `domain/`. Every time-dependent service
   takes a `Clock` so slot-boundary behaviour is testable by advancing a fake.
 
-### Services this app owns
+### The logic that belongs here
 
-| Service | Responsibility |
-| --- | --- |
-| `SlotWindowService` | Computes the three windows for a date from the schedule in effect on that date. Owns midnight crossing, span validation, and DST. |
-| `SlotStatusService` | Derives `SlotStatus` from window, clock, installation instant, and the presence of a row. Never writes. |
-| `MoodSummaryService` | Daily average over completed slots, completeness flag, weekly statistics, completion rate. |
-| `EmotionSummaryService` | Frequency counts over a period. |
+Four bodies of logic are domain services in this app. How they are split into classes, and what
+those classes are called, is decided when the feature that needs them is built — but none of them
+may end up in a ViewModel, a widget, or a repository:
 
-These four carry the invariants in `data-integrity-rules.md`. Changes to them are the changes most
-likely to break something a clinician relies on — take them slowly and cover them with tests first.
+- **Window computation** — deriving a date's three windows from the schedule in effect on that
+  date. Owns midnight crossing, waking-span validation, and DST.
+- **Status derivation** — turning a window, the clock, the installation instant, and the presence
+  or absence of a recording into a slot status. Reads only; never writes.
+- **Mood summarisation** — daily average over completed slots, the incomplete-day flag, weekly
+  statistics, completion rate.
+- **Emotion summarisation** — frequency counts over a period.
 
-<example>
+Each is a pure function over a schedule and a set of recordings, so each is unit-testable with a
+fake clock and no database.
 
-```dart
-// domain/services/slot_status_service.dart
-class SlotStatusService {
-  const SlotStatusService(this._clock, this._windows);
-  final Clock _clock;
-  final SlotWindowService _windows;
+These four carry the invariants in `data-integrity-rules.md`, which means they are where a
+regression stops being a bug and starts being a wrong clinical record. Take them slowly and cover
+them with tests first.
 
-  SlotStatus statusOf({
-    required SlotWindow window,
-    required DateTime installedAt,
-    required RecordingEntity? recording,
-  }) {
-    if (recording != null) return const SlotStatus.completed();
-    if (!window.end.isAfter(installedAt)) return const SlotStatus.notApplicable();
-
-    final now = _clock.now();
-    if (now.isBefore(window.start)) return SlotStatus.locked(opensAt: window.start);
-    if (now.isBefore(window.end)) return SlotStatus.open(closesAt: window.end);
-    return const SlotStatus.skipped();
-  }
-}
-```
-</example>
-
-Note the order of the branches: `notApplicable` is checked before the clock comparisons, so a slot
-that closed before the app existed never surfaces as a skip.
+One ordering constraint is not free to change: a slot whose window closed **before the app was
+installed** is *not applicable*, and that has to be established before any comparison against the
+current time, or the app's first day fills with skips that never happened.
