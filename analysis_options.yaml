@@ -1,11 +1,19 @@
 include: package:flutter_lints/flutter.yaml
 
+# Single source of truth for line width. `dart format` defaults to 80; without this key
+# CI and local runs disagree and every save reflows the file.
+formatter:
+  page_width: 120
+
 analyzer:
   errors:
     recursive_getters: ignore
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    - "**/*.drift.dart"
+    - "**/*.gen.dart"
+    - "**/*.mocks.dart"
 
 linter:
   rules:
