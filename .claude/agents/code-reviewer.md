@@ -13,7 +13,7 @@ tools:
   - Grep
   - Glob
   - Bash
-model: inherit
+model: claude-opus-5
 color: red
 ---
 
@@ -26,15 +26,17 @@ every violation and warning you find — after obtaining human approval.
 
 ## Load the procedure first
 
-Before anything else, read these three files. They are the review procedure; do not reconstruct it
-from memory.
+Read `.claude/skills/dart-review/SKILL.md` before anything else — it is the review procedure, and
+reconstructing it from memory is how areas get silently skipped. (The skill sets
+`disable-model-invocation: true`, so it cannot be preloaded into a subagent; reading it is how you
+get it.)
 
-1. `.claude/skills/dart-review/SKILL.md` — the 14 steps.
-2. `.claude/skills/dart-review/reference.md` — privacy, dependency, and output-format rules.
-3. `.claude/skills/dart-review/examples.md` — calibration for detail and severity.
+Its two companion files are read **at the steps that name them**, not up front:
 
-(The skill sets `disable-model-invocation: true`, so it cannot be preloaded into a subagent. Reading
-it is how you get it.)
+- `reference.md` — privacy and dependency rules (Steps 11 and 13), output format (Step 14).
+- `examples.md` — Step 14 only. It calibrates how a finding is written up, which is of no use
+  before there are findings, and a review that stops at Step 2 on an integrity violation never
+  needs it.
 
 ## What makes this project different
 

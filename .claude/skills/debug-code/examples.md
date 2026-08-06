@@ -1,7 +1,8 @@
 # Examples
 
 File paths and symbol names are placeholders. These examples calibrate the *shape and depth* of a
-report — root cause, data impact, fix, scanning cost — not the identifiers a finding names.
+report — root cause, data impact, fix, scanning cost — not the identifiers a finding names. They are
+ordered by scanning cost, which is the axis the skill optimises: 0 files, 2, 4, and abort.
 
 ## 1. Intended behaviour — stop before scanning
 
@@ -28,32 +29,7 @@ is a legitimate UI issue and worth changing. The underlying behaviour is not.
 
 ---
 
-## 2. User knows the file — minimal scanning
-
-**User Input:**
-
-- Problem: "Crash opening the app first thing in the morning, before my usual wake time."
-- Error: `Null check operator used on a null value`
-- Suspect file: `lib/entry/presentation/ux/<name>_page.dart`
-
-**Output:**
-
-**Root Cause:** The page's `build()` force-unwraps the current window before reading its closing
-time. Before the first slot opens, no window contains *now*, so the value is `null` and the page
-crashes rather than rendering the locked state.
-
-**Data Impact:** None. The crash occurs on read, before any write path is reached.
-
-**Fix:** Replaced the force-unwrap with an exhaustive `switch` over the slot status at
-`<name>_page.dart:34–48`. The locked branch now renders the opening time, matching the states in
-`presentation-layer-rules.md`. Added a widget test covering a build one millisecond before the
-window opens.
-
-**Files Read:** 1
-
----
-
-## 3. Known failure mode — Level 0 match
+## 2. Known failure mode — Level 0 match
 
 **User Input:**
 
@@ -77,7 +53,7 @@ Added two tests advancing the fake clock across a spring-forward and a fall-back
 
 ---
 
-## 4. Data impact is the important part of the report
+## 3. Data impact is the important part of the report
 
 **User Input:**
 
@@ -105,7 +81,7 @@ correcting — a fabricated value cannot be recovered, only removed.
 
 ---
 
-## 5. Insufficient information — abort and ask
+## 4. Insufficient information — abort and ask
 
 **User Input:**
 
@@ -126,4 +102,5 @@ Please provide:
 - Device and platform, and the Android version if applicable.
 - Whether the slot in question already had a recording when the reminder was due.
 
-**Files Read:** 0
+Note that the ask is specific to the four causes named. "Please provide more detail" would put the
+work back on the user without telling them which detail decides between the candidates.

@@ -2,7 +2,7 @@
 name: dart-documentation
 description: "Document Dart code with dartdoc comments. Use when asked to write, review, or improve doc comments in lib/**/*.dart files. Covers public APIs, private non-obvious code, invariant-carrying services, and library-level docs."
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob
+allowed-tools: Read, Grep, Glob, Edit, Bash
 ---
 
 # Dart Documentation Skill
@@ -77,8 +77,8 @@ indistinguishable from a real one downstream (`data-integrity-rules.md` § 1)."
 - Remove any commented-out code.
 - Remove any doc comments that merely restate the name or signature.
 - Remove trailing comments.
-- Verify consistent terminology across all modified files — see [reference.md](reference.md)
-  § Terminology, which fixes the vocabulary this project uses.
+- Verify consistent terminology across all modified files against `CLAUDE.md` § Vocabulary. See
+  [reference.md](reference.md) § Terminology for the one obligation prose carries beyond that table.
 
 ### Step 6 — Verify
 

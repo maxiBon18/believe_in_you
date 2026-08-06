@@ -2,7 +2,7 @@
 name: dart-review
 description: "Run a structured 12-area code review on Mood Diary Dart files. Use when asked to review code, check code quality, or audit changes in lib/**/*.dart. Covers data integrity, architecture, time correctness, code quality, null safety, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Dart Review Skill
@@ -139,10 +139,7 @@ reviewing formatting in a file that fabricates a mood value.
 
 ### Step 14 — Produce report
 
-- Generate the output following [reference.md](reference.md) § Output Format.
-- Use [examples.md](examples.md) to calibrate structure and level of detail.
-- List the summary table first, then every 🔴 Violation with file, line, rule violated, and
-  suggested fix, then every ⚠️ Warning.
-- If any data-integrity violation was found, say so explicitly at the top of the report before the
-  table.
-- If no violations or warnings exist, state "All checks passed" and briefly list what was verified.
+Read [reference.md](reference.md) § Output Format and follow it. Read [examples.md](examples.md)
+here — not earlier — to calibrate depth; it is only useful once there are findings to write up.
+
+If no violations or warnings exist, state "All checks passed" and briefly list what was verified.

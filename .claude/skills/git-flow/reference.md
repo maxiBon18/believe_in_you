@@ -13,7 +13,7 @@ Check `.husky/` rather than trusting this list if something behaves unexpectedly
 | Hook | Runs | Note |
 | --- | --- | --- |
 | `pre-commit` | `npm test` | `package.json`'s `test` script is currently empty, so this passes trivially. It is a placeholder for `fvm flutter test`, not a safety net — do not treat a green commit as a green suite. |
-| `commit-msg` | `npx commitlint --edit "$1"` | Rejects a message that is not a valid Conventional Commit. |
+| `commit-msg` | `npx --no -- commitlint --edit "$1"` | Rejects a message that is not a valid Conventional Commit. |
 
 There is no `post-commit` hook. Hooks fire from Git; never run them by hand, and never pass
 `--no-verify`.
@@ -44,8 +44,8 @@ There is no `post-commit` hook. Hooks fire from Git; never run them by hand, and
 
 ## Scope
 
-Use the feature or module name: `entry`, `history`, `export`, `settings`, `onboarding`, `core`, or
-`config` for examples, for tooling and repo configuration. If more than one is involved, use the most relevant.
+Use the feature or module name: `entry`, `history`, `export`, `settings`, `onboarding`, `core` — or
+`config` for tooling and repo configuration. If more than one is involved, use the most relevant.
 
 ## Rules
 

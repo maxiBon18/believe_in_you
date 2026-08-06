@@ -46,7 +46,7 @@ record quietly starts lying.
 ## 3. Documenting non-obvious branch ordering
 
 ```dart
-/// Debounced so a slider drag does not emit one draft per pixel.
+/// Classifies a slot whose window has closed.
 ///
 /// The not-applicable check runs before any clock comparison: a slot that
 /// closed before installation must never surface as a skip, and comparing it
@@ -55,6 +55,10 @@ ExampleStatus _classify(ExampleWindow window, DateTime installedAt) {
   // ...
 }
 ```
+
+The summary says what the method does; the body paragraph explains the one thing a reader would
+otherwise "simplify". Both are needed — a body paragraph attached to a summary that describes some
+other method is worse than no comment, because it reads as authoritative.
 
 ## 4. Enum with values
 
@@ -120,16 +124,14 @@ class ExampleRepository {
 /// `[start, end)`, so a save at `end` belongs to no slot.
 ///
 /// ```dart
-/// final windows = service.windowsFor(
-///   date: DateTime(2026, 3, 14),
-///   schedule: ExampleSchedule(wake: TimeOfDay(hour: 7, minute: 0),
-///                             sleep: TimeOfDay(hour: 23, minute: 0)),
-/// );
-/// // windows[0].start == 07:00, windows[2].end == 23:00
+/// // wake 07:00, sleep 23:00 → windows[0].start == 07:00, windows[2].end == 23:00
+/// final windows = service.windowsFor(date: date, schedule: schedule);
 /// ```
 List<ExampleWindow> windowsFor({required DateTime date, required ExampleSchedule schedule}) {
   // ...
 }
 ```
 
-Note the sample uses round synthetic values, not something that reads like a real person's day.
+A sample earns its place only where prose cannot carry the point — here, that the third window's end
+is the sleep time rather than midnight. Round synthetic values, never something that reads like a
+real person's day.

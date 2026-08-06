@@ -42,27 +42,10 @@ These rules are evaluated directly by the skill:
   **and must not transmit data**. A new dependency with a network capability is a 🔴, not a
   discussion.
 
-## External Rule Files
-
-The following project rule files contain the authoritative standards for their respective review
-areas. Read each file at the step that references it:
-
-| Review Area        | Rule File                                        | Section                              |
-| ------------------ | ------------------------------------------------ | ------------------------------------ |
-| Data Integrity     | `.claude/rules/code/data-integrity-rules.md`     | Full file                            |
-| Architecture       | `CLAUDE.md`                                      | §§ Architecture, Dependency rule     |
-| Time Correctness   | `.claude/rules/code/coding-conventions.md`       | § Time                               |
-| Time Correctness   | `.claude/rules/code/domain-layer-rules.md`       | § Services                           |
-| Code Quality       | `.claude/rules/code/coding-conventions.md`       | Full file                            |
-| Null Safety        | `.claude/rules/code/coding-conventions.md`       | § Null safety                        |
-| Widget Quality     | `.claude/rules/code/presentation-layer-rules.md` | §§ Naming and placement, Composition |
-| State Management   | `.claude/rules/code/viewmodel-rules.md`          | Full file                            |
-| Error Handling     | `.claude/rules/code/coding-conventions.md`       | § Error handling                     |
-| Performance        | `.claude/rules/code/presentation-layer-rules.md` | § Performance                        |
-| Accessibility      | `.claude/rules/code/presentation-layer-rules.md` | § Responsive and accessible          |
-| Data layer specifics | `.claude/rules/code/data-layer-rules.md`       | § Repository rules specific to this app |
-| Navigation         | `.claude/rules/code/routing-rules.md`            | Full file                            |
-| Vocabulary         | `CLAUDE.md`                                      | § Vocabulary                         |
+Each SKILL.md step names the rule file it depends on. Read it at that step, not up front — the
+review is layered so a blocking integrity finding stops the pass before the later files are needed.
+Two files no step names explicitly: `data-layer-rules.md` when a repository or data source is in
+scope, and `CLAUDE.md` § Vocabulary whenever a finding turns on what something is called.
 
 ## Output Format
 

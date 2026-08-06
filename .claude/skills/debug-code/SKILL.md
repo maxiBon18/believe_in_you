@@ -2,7 +2,7 @@
 name: debug-code
 description: "Diagnose and fix bugs in the Mood Diary Flutter project. Use when the user reports a bug, error, crash, unexpected behavior, or asks to debug an issue. Requires a problem description; optionally accepts error messages, stack traces, and screenshots."
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob
+allowed-tools: Read, Grep, Glob, Edit, Bash
 ---
 
 # Debug Skill

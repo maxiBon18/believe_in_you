@@ -3,24 +3,21 @@
 File paths and symbol names below are placeholders — the point of each example is the *shape* of the
 finding, not the identifier. Use whatever the code under review is actually called.
 
+The full summary table is defined in [reference.md](reference.md) § Output Format; the tables below
+are excerpted to three rows to show how the **Issues** column reads, not to restate the row list.
+
 ## 1. Clean review — all checks passed
 
-| Area                | Result | Issues                                        |
-| ------------------- | ------ | --------------------------------------------- |
-| Data Integrity      | ✅     | No synthesized values, no writes on read      |
-| Architecture        | ✅     | Layer boundaries respected                    |
-| Time Correctness    | ✅     | Clock injected, no direct `DateTime.now()`    |
-| Code Quality        | ✅     | Naming and formatting consistent              |
-| Null Safety         | ✅     | No unnecessary nullable types                 |
-| Widget Quality      | ✅     | Proper decomposition, const constructors used |
-| State Management    | ✅     | Providers correctly scoped                    |
-| Error Handling      | ✅     | Failed save leaves form retryable             |
-| Performance         | ✅     | No aggregation in build methods               |
-| Privacy & Security  | ✅     | No user data in logs, no transport deps       |
-| Accessibility       | ✅     | Semantics on scale faces, targets ≥ 48dp      |
-| Dependencies        | ✅     | Import order correct, no unused packages      |
+| Area                | Result | Issues                                     |
+| ------------------- | ------ | ------------------------------------------ |
+| Data Integrity      | ✅     | No synthesized values, no writes on read   |
+| Time Correctness    | ✅     | Clock injected, no direct `DateTime.now()` |
+| Error Handling      | ✅     | Failed save leaves form retryable          |
 
 All checks passed. Verified 4 files, 0 violations, 0 warnings.
+
+Note what the Issues column does even on a pass: it names *what was verified*, not "OK". A table of
+twelve ✅ with no detail tells the reader nothing about whether the check was real.
 
 ## 2. Review with an integrity violation
 
@@ -31,17 +28,8 @@ All checks passed. Verified 4 files, 0 violations, 0 warnings.
 | Area                | Result | Issues                                    |
 | ------------------- | ------ | ----------------------------------------- |
 | Data Integrity      | 🔴     | Default scale substituted for missing row |
-| Architecture        | ✅     | Layer boundaries respected                |
 | Time Correctness    | 🔴     | `DateTime.now()` in a domain service      |
-| Code Quality        | ⚠️     | Inconsistent naming in 1 file             |
-| Null Safety         | ✅     | No unjustified force-unwraps              |
-| Widget Quality      | ✅     | Proper decomposition                      |
-| State Management    | 🔴     | `ref.read` used in build method           |
 | Error Handling      | ⚠️     | Missing feedback on failed save           |
-| Performance         | ✅     | No issues                                 |
-| Privacy & Security  | 🔴     | Note text written to log                  |
-| Accessibility       | ✅     | Targets and semantics correct             |
-| Dependencies        | ✅     | Import order correct                      |
 
 ### 🔴 Violations
 
@@ -69,18 +57,7 @@ All checks passed. Verified 4 files, 0 violations, 0 warnings.
 - **Fix:** Inject `Clock` through the constructor and call it. Register it in
   `core/shared/controllers/di.dart` per `di-rules.md` § Core registrations.
 
-**3. State Management — `ref.read` in build method**
-
-- **File:** `lib/entry/presentation/ux/<name>_page.dart:32`
-- **Rule:** `viewmodel-rules.md` § Riverpod — "`ref.watch` inside `build`; `ref.read` inside
-  callbacks and event handlers only."
-- **Issue:** `ref.read` on the entry ViewModel's provider inside `build()` prevents the widget
-  rebuilding when the slot transitions from open to closed.
-- **Why it matters:** The window can close while the screen is visible. Without a rebuild the form
-  stays editable and a save can land after the window has shut.
-- **Fix:** Replace with `ref.watch`.
-
-**4. Privacy & Security — Note text written to log**
+**3. Privacy & Security — Note text written to log**
 
 - **File:** `lib/entry/presentation/viewmodel/<name>_viewmodel.dart:58`
 - **Rule:** Code Review § Privacy & Security — "Note text, emotion selections, and scale values must
@@ -88,16 +65,12 @@ All checks passed. Verified 4 files, 0 violations, 0 warnings.
 - **Issue:** `log('saving draft: $draft')` interpolates the full draft, including the note.
 - **Fix:** Log the slot identifier and the status transition only.
 
+Note the difference in weight: the two integrity-adjacent findings earn a *Why it matters* that
+names the clinical consequence; the log leak is self-evident once stated and gets none.
+
 ### ⚠️ Warnings
 
-**1. Code Quality — Inconsistent naming**
-
-- **File:** `lib/history/domain/services/<name>_service.dart:15`
-- **Rule:** `coding-conventions.md` § Naming — "Use lowerCamelCase for variables and methods."
-- **Issue:** Method named `Compute_Average` instead of `computeAverage`.
-- **Fix:** Rename to `computeAverage`.
-
-**2. Error Handling — Missing feedback on failed save**
+**1. Error Handling — Missing feedback on failed save**
 
 - **File:** `lib/entry/presentation/ux/<name>_page.dart:71`
 - **Rule:** `viewmodel-rules.md` § Entry ViewModel specifics — "A failed save leaves the form intact

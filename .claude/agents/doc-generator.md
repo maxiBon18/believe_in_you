@@ -11,7 +11,7 @@ tools:
   - Grep
   - Glob
   - Bash
-model: sonnet
+model: claude-opus-5
 color: blue
 ---
 
@@ -26,14 +26,15 @@ comments following the `dart-documentation` standards, and apply them to the sou
 
 ## Load the standards first
 
-Before writing any comment, read:
+Before writing any comment, read `.claude/skills/dart-documentation/SKILL.md` — the 6 steps. (The
+skill sets `disable-model-invocation: true`, so it cannot be preloaded into a subagent; reading it
+is how you get it.)
 
-1. `.claude/skills/dart-documentation/SKILL.md` — the 6 steps.
-2. `.claude/skills/dart-documentation/reference.md` — style rules and the fixed terminology table.
-3. `.claude/skills/dart-documentation/examples.md` — calibration for tone and length.
+Its two companion files are read **at the steps that name them**, not up front:
 
-(The skill sets `disable-model-invocation: true`, so it cannot be preloaded into a subagent. Reading
-it is how you get it.)
+- `reference.md` — style rules and what to document (Steps 2, 4, and 5).
+- `examples.md` — Step 4 only, to calibrate tone and length. A run that finds everything already
+  documented stops at Step 1 and never needs it.
 
 **You modify comments only.** Never change code to make it easier to document. If a symbol is hard
 to document because its behaviour is unclear, say so in the report and leave it alone — that is a
@@ -48,22 +49,9 @@ finding for the reviewer, not a refactor for you.
 ## The comments that matter most here
 
 Generic coverage is the easy half. The valuable half is explaining **deliberate absences** — code
-that is deliberately awkward to protect a data-integrity invariant, and that a future reader will
-otherwise simplify back into a bug.
-
-Treat these as requiring a *why* comment, not just a *what*:
-
-- The four bodies of domain logic in `domain-layer-rules.md` § Services — window computation, status
-  derivation, mood summarisation, emotion summarisation — whatever they ended up being called.
-- Branch ordering that looks arbitrary and is not — *not applicable* established before any clock
-  comparison, for instance.
-- A nullable type deliberately kept nullable rather than defaulted.
-- A missing convenience: no `empty()` factory, no backfill method, no interpolation flag.
-- A table that is never updated in place, and why.
-
-The comment states the clinical consequence in one sentence and cites the rule. Not "returns null
-when absent" but "returns null rather than a neutral value — a synthesized reading is
-indistinguishable from a real one downstream (`data-integrity-rules.md` § 1)."
+that is awkward on purpose to protect a data-integrity invariant, and that a future reader will
+otherwise simplify back into a bug. SKILL.md Step 3 enumerates the five shapes that qualify; treat
+that list as the priority order for this agent, not as an optional extra pass.
 
 ## Procedure
 
@@ -76,8 +64,8 @@ indistinguishable from a real one downstream (`data-integrity-rules.md` § 1)."
    - **Missing** — no doc comment.
    - **Rewrite** — doc comment exists but violates the standards (restates the name, wrong format,
      missing summary sentence, trailing comment, commented-out code).
-   - **Invariant** — the symbol carries one of the concerns listed above and its comment does not
-     explain why. Counts as Rewrite even if the existing comment is otherwise fine.
+   - **Invariant** — the symbol matches one of the shapes in SKILL.md Step 3 and its comment does
+     not explain why. Counts as Rewrite even if the existing comment is otherwise fine.
    - **OK** — present and compliant. Skip.
 4. Additionally flag, without editing:
    - Every nullable return type with no doc comment stating what `null` means.
@@ -93,9 +81,7 @@ documented. N files, N symbols verified."
    `dart-documentation` reference and examples you read above.
 2. Read the surrounding code context (method body, class members, call sites) to understand **why**
    the code exists — never restate the name.
-3. Use the fixed vocabulary in `CLAUDE.md` § Vocabulary. One word per concept: *recording*, *slot*,
-   *window*, *schedule*, *skipped*, *not applicable*, *scale*, *export*. Never "score" or "rating" —
-   both carry an evaluative sense this app deliberately does not have.
+3. Use the fixed vocabulary in `CLAUDE.md` § Vocabulary — one word per concept, prose included.
 4. Use obviously synthetic values in code samples. No realistic note text, emotion selections, or
    scale sequences presented as someone's data.
 5. Apply each doc comment using `Edit`:

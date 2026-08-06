@@ -2,7 +2,7 @@
 name: flutter-test
 description: "Analyze the Mood Diary app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
 # Flutter Test Skill
@@ -93,8 +93,10 @@ Ask: **"These packages are required. Add them to pubspec.yaml? (y/n)"**
 Do NOT install packages without user approval. A package that transmits data is refused outright,
 even in `dev_dependencies` — see `data-integrity-rules.md` § 6.
 
-1. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
-2. Verify a `FakeClock` helper exists in `test/helpers/`. If not, write it first — most of this
+After STOP 2 resolves:
+
+3. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
+4. Verify a `FakeClock` helper exists in `test/helpers/`. If not, write it first — most of this
    app's meaningful tests depend on it.
 
 ## Step 7 — Write tests

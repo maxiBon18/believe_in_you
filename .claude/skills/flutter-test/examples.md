@@ -4,6 +4,9 @@
 derivation*, *the scale selector* — until the code exists, then use its real symbol. A plan that
 invents a class name commits the implementation to it before anyone chose it.
 
+The invariant IDs and edge-case categories are enumerated in [reference.md](reference.md); the rows
+below are excerpts showing the *column shape and the depth of a Rationale*, not the full lists.
+
 ## Test Plan Summary Format
 
 | Type        | Cases  | Features                                             | Est. Time |
@@ -22,9 +25,6 @@ Invariant suite: 11 of 11 included.
 | ------ | ------ | --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- | -------- |
 | UT-001 | Unit   | window computation    | Splits a 16h waking span into three equal windows  | Every other slot behaviour depends on these boundaries being right             | None       | Critical |
 | UT-002 | Unit   | status derivation     | Returns *open* inside the window                   | The entry form is editable only in this state                                  | FakeClock  | Critical |
-| UT-003 | Unit   | status derivation     | Returns *completed* when a recording exists        | A saved slot must never reopen for editing                                     | FakeClock  | Critical |
-| UT-004 | Unit   | summary computation   | Averages three completed slots                     | The chart and the export both read this value                                  | None       | High     |
-| WT-001 | Widget | scale selector        | Shows the word and face for the selected value     | An unanchored scale drifts; the label is what prevents it                      | None       | High     |
 | WT-002 | Widget | entry page            | Save disabled until a scale and one emotion exist  | Prevents an empty or partial recording being written                           | Fake VM    | Critical |
 | IT-001 | Integration | Onboarding → first recording | Completes onboarding and saves one recording | Validates the full chain: schedule write → window computation → save → chart   | FakeClock  | Critical |
 
@@ -32,24 +32,19 @@ Invariant suite: 11 of 11 included.
 
 | ID     | Type   | Target                | Description                                              | Rationale                                                                                              | Deps       | Priority |
 | ------ | ------ | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | -------- |
-| INV-01 | Unit   | recording repository  | Reading an empty day writes no rows                      | A read that writes turns every chart render into fabricated data                                        | In-mem DB  | Critical |
 | INV-02 | Unit   | row → entity mapping  | Null scale maps to null entity, not a default            | A default reads back as a real observation in the clinician's export                                    | None       | Critical |
-| INV-04 | Unit   | summary computation   | Zero recordings yields no point, not 0                   | A zero would plot as the worst possible day on a day with no data at all                                | None       | Critical |
-| INV-05 | Unit   | the save path         | A save at the closing instant is rejected                | The no-backfill rule rests entirely on this boundary; one millisecond of slack removes it               | FakeClock  | Critical |
 | INV-08 | Migration | Schema v2 → v3     | All pre-existing recordings survive with identical values | This is the developer's own clinical record with no backup — a lossy migration is unrecoverable         | Real schemas | Critical |
+
+Note the Rationale column on both: it states the clinical consequence, never the rule number. "Covers
+`data-integrity-rules.md` § 1" does not tell a reviewer what breaks.
 
 ### Edge Case Tests (suffix `-E`)
 
 | ID       | Type   | Target              | Description                                                    | Rationale                                                                                   | Deps          | Priority |
 | -------- | ------ | ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------- | -------- |
-| UT-001-E | Unit   | window computation  | Sleep time after midnight resolves to the wake date             | Late bedtimes are the normal case for this user; getting the date wrong misfiles a whole day | None          | Critical |
 | UT-002-E | Unit   | status derivation   | Open one millisecond before the close, skipped at the close     | Half-open interval — a closed interval would let one instant belong to two slots             | FakeClock     | Critical |
 | UT-003-E | Unit   | window computation  | Spring-forward transition inside the second window              | A duration-based offset silently shifts boundaries by an hour twice a year                   | FakeClock     | High     |
-| UT-005-E | Unit   | status derivation   | A window closed before installation returns *not applicable*    | Otherwise the first day shows phantom skips and depresses the completion rate on day one     | FakeClock     | High     |
-| UT-006-E | Unit   | schedule resolution | Changing the schedule leaves yesterday's windows unchanged      | A rewritten schedule silently relabels history and changes a week that is already over       | In-mem DB     | Critical |
 | WT-003-E | Widget | entry page          | Window closes while the screen is open → becomes read-only      | Without it a save lands after the window shut, violating the no-backfill rule from the UI    | FakeClock     | Critical |
-| WT-004-E | Widget | scale selector      | Renders at the largest system text scale without clipping       | The scale selector is the most-used control; clipping makes the app unusable at large sizes  | None          | Medium   |
-| IT-002-E | Integration | Notification tap | Tapping a reminder after its window closed opens read-only     | A notification can be tapped hours later; the screen must not accept a late save             | FakeClock     | High     |
 
 ## Missing Packages STOP Format
 
@@ -70,7 +65,6 @@ Add these to pubspec.yaml? (y/n)
 | Type        | Include? | Reason                                                                                                    |
 | ----------- | -------- | --------------------------------------------------------------------------------------------------------- |
 | Unit        | ✅        | History has date-range and aggregation logic                                                              |
-| Widget      | ✅        | Heatmap cells have four distinct states that must be visually distinguishable                             |
 | Integration | ❌        | Onboarding→first recording already exercises navigation into History; a separate flow duplicates coverage |
 
 ## Report Format — invariant line first

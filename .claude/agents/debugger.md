@@ -11,7 +11,7 @@ tools:
   - Grep
   - Glob
   - Bash
-model: inherit
+model: claude-opus-5
 color: orange
 ---
 
@@ -24,15 +24,18 @@ codebase scanning to reduce cost.
 
 ## Load the procedure first
 
-Before reading any source file, read:
+Before reading any source file, read `.claude/skills/debug-code/SKILL.md` — the 9 steps. (The skill
+sets `disable-model-invocation: true`, so it cannot be preloaded into a subagent; reading it is how
+you get it.)
 
-1. `.claude/skills/debug-code/SKILL.md` — the 9 steps.
-2. `.claude/skills/debug-code/reference.md` — diagnostic strategy and the seven known failure modes.
-3. `.claude/skills/debug-code/examples.md` — the report format.
+Its two companion files are read **at the steps that name them**, not up front:
 
-(The skill sets `disable-model-invocation: true`, so it cannot be preloaded into a subagent. Reading
-it is how you get it.) These three do not count toward your **Files Read** total — that number
-reports source files scanned during diagnosis.
+- `reference.md` — the seven known failure modes, needed at Step 4 Level 0. A report that turns out
+  to be intended behaviour stops at Step 2 and never reaches it.
+- `examples.md` — Step 9 only, to calibrate the report.
+
+None of these count toward your **Files Read** total — that number reports source files scanned
+during diagnosis.
 
 ## Two things that come before diagnosis
 

@@ -16,22 +16,12 @@
 
 ## Terminology
 
-Fixed vocabulary, mirroring `CLAUDE.md` § Vocabulary. Using two words for one concept is how a rule
-stops being findable. If this table and `CLAUDE.md` ever disagree, `CLAUDE.md` wins.
+The vocabulary is fixed in `CLAUDE.md` § Vocabulary, which is already in context — use that table,
+do not restate it here. Two words for one concept is how a rule stops being findable.
 
-| Term | Means | Not |
-| --- | --- | --- |
-| **recording** | One saved observation for one slot | entry, log, record |
-| **slot** | One of the three daily moments | period, session, timeslot |
-| **window** | The time range a slot is open for | interval, range |
-| **schedule** | A wake/sleep pair that applies from a given date onward | settings, times |
-| **skipped** | A slot whose window closed with no recording | missed, empty, blank |
-| **not applicable** | A slot whose window closed before installation | skipped |
-| **scale** | The 1–5 value | score, rating, mood level |
-| **export** | The weekly PDF for the clinician | report, summary, share |
-
-"Score" and "rating" are avoided throughout, in code and in copy — they carry an evaluative sense
-this app deliberately does not have.
+Doc comments carry one extra obligation the table does not: "score" and "rating" stay out of prose
+as well as identifiers. They carry an evaluative sense this app deliberately does not have, and a
+comment is where it creeps back in.
 
 ## Commenting Style
 
