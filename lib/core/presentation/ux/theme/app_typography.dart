@@ -2,7 +2,7 @@
 ///
 /// Grouped by the family that carries them: [AppDisplayText] for the serif
 /// voice, [AppBodyText] for running copy and labels, [AppMonoText] for digits.
-/// [AppFonts] holds the families themselves and the optical-size axes.
+/// [AppFonts] holds the families themselves.
 ///
 /// A style appears once. Where two places share every attribute, the constant
 /// is named for the step rather than for one of its uses.
@@ -11,7 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:believe_in_you/core/presentation/ux/theme/app_colors.dart';
 
-/// Font families, and the optical-size settings the variable families accept.
+/// The three font families the tokens below are set in.
 abstract final class AppFonts {
   /// Serif display family — wordmark and headings.
   ///
@@ -21,19 +21,13 @@ abstract final class AppFonts {
 
   /// Sans body family — paragraphs, labels, and button text.
   ///
-  /// Same `pubspec.yaml` requirement as [display]. DM Sans is a variable font;
-  /// the optical-size axis is set per style.
+  /// Same `pubspec.yaml` requirement as [display]. Registered as static
+  /// Regular and Medium instances, so weight is the only axis a style sets.
   static const String body = 'DM Sans';
 
   /// Monospaced family — wall-clock times and counts, so digits keep a fixed
   /// width. Same `pubspec.yaml` requirement as [display].
   static const String mono = 'DM Mono';
-
-  /// Optical size 9 — the axis the design uses for regular-weight text.
-  static const List<FontVariation> opticalSize9 = <FontVariation>[FontVariation('opsz', 9)];
-
-  /// Optical size 14 — the axis the design uses for medium-weight text.
-  static const List<FontVariation> opticalSize14 = <FontVariation>[FontVariation('opsz', 14)];
 }
 
 /// Styles set in [AppFonts.display].
@@ -108,50 +102,44 @@ abstract final class AppDisplayText {
 
 /// Styles set in [AppFonts.body].
 abstract final class AppBodyText {
-  /// Body copy — DM Sans Regular 16/26 at optical size 9.
+  /// Body copy — DM Sans Regular 16/26.
   static const TextStyle body = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 26 / 16,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Body copy at the smaller step — DM Sans Regular 14/22.75 at optical
-  /// size 9.
+  /// Body copy at the smaller step — DM Sans Regular 14/22.75.
   static const TextStyle bodySmall = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 22.75 / 14,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Text inside a chart tooltip — DM Sans Regular 11/16.5 at optical size 9.
+  /// Text inside a chart tooltip — DM Sans Regular 11/16.5.
   static const TextStyle tooltipLabel = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 11,
     fontWeight: FontWeight.w400,
     height: 16.5 / 11,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Hint under a settings row's title — DM Sans Regular 12/19.5 at optical
-  /// size 9.
+  /// Hint under a settings row's title — DM Sans Regular 12/19.5.
   static const TextStyle rowHint = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 19.5 / 12,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
   /// Supporting line beside content — a slot's name, a saved-state notice —
-  /// DM Sans Regular 14/20 at optical size 9.
+  /// DM Sans Regular 14/20.
   ///
   /// Pairs with [AppMonoText.timeRange] where the line mixes prose and digits.
   static const TextStyle metaLabel = TextStyle(
@@ -160,7 +148,6 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w400,
     height: 20 / 14,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
   /// Label on a card row, either side of a bullet, and a note's text in the
@@ -171,7 +158,6 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w400,
     height: 20 / 14,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
   /// Placeholder inside the note field — [metaLabel]'s metrics in
@@ -182,18 +168,16 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w400,
     height: 20 / 14,
     color: AppColors.textPlaceholder,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Title inside a card, on a disclosure row, and on a settings row — DM Sans
-  /// Medium 14/20 at optical size 14.
+  /// Title inside a card, on a disclosure row, and on a settings row —
+  /// DM Sans Medium 14/20.
   static const TextStyle cardTitle = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 20 / 14,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize14,
   );
 
   /// Chevron opening a settings row — [cardTitle]'s metrics in
@@ -204,7 +188,6 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 20 / 14,
     color: AppColors.textSecondaryDim,
-    fontVariations: AppFonts.opticalSize14,
   );
 
   /// Label on the destructive action — [cardTitle]'s metrics in
@@ -215,18 +198,16 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 20 / 14,
     color: AppColors.danger,
-    fontVariations: AppFonts.opticalSize14,
   );
 
   /// Caption over a card's title, and the label on a read-only emotion chip —
-  /// DM Sans Regular 12/16 at optical size 9.
+  /// DM Sans Regular 12/16.
   static const TextStyle caption = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 16 / 12,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
   /// Emotion name on a count chip — [caption]'s metrics in
@@ -237,11 +218,10 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w400,
     height: 16 / 12,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Medium-weight label at 12/16, optical size 14 — a slot tab's label, the
-  /// second line of a settings row.
+  /// Medium-weight label at 12/16 — a slot tab's label, the second line of a
+  /// settings row.
   ///
   /// The widget recolours a selected tab with [AppColors.onInverse].
   static const TextStyle labelMedium = TextStyle(
@@ -250,7 +230,6 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 16 / 12,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize14,
   );
 
   /// Label on an emotion chip — [labelMedium]'s metrics, recoloured by the
@@ -261,11 +240,9 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 16 / 12,
     color: AppColors.emotionDifficultText,
-    fontVariations: AppFonts.opticalSize14,
   );
 
-  /// Label over a form field or list — DM Sans Regular 12/16 at optical size 9,
-  /// 1.2 track.
+  /// Label over a form field or list — DM Sans Regular 12/16, 1.2 track.
   ///
   /// Set in upper case by the widget, not by the token: `TextStyle` carries no
   /// case transform, so the copy layer decides.
@@ -276,11 +253,9 @@ abstract final class AppBodyText {
     height: 16 / 12,
     letterSpacing: 1.2,
     color: AppColors.textSecondaryMuted,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Section label over a card — DM Sans Medium 12/16 at optical size 14,
-  /// 1.2 track.
+  /// Section label over a card — DM Sans Medium 12/16, 1.2 track.
   ///
   /// Heavier and darker than [sectionLabel]; same upper-case caveat.
   static const TextStyle sectionLabelStrong = TextStyle(
@@ -290,11 +265,10 @@ abstract final class AppBodyText {
     height: 16 / 12,
     letterSpacing: 1.2,
     color: AppColors.textPrimarySubtle,
-    fontVariations: AppFonts.opticalSize14,
   );
 
   /// Label over a group — emotion chips, a month of heatmap cells — DM Sans
-  /// Regular 10/15 at optical size 9, 1.0 track.
+  /// Regular 10/15, 1.0 track.
   ///
   /// Same upper-case caveat as [sectionLabel].
   static const TextStyle groupLabel = TextStyle(
@@ -304,11 +278,9 @@ abstract final class AppBodyText {
     height: 15 / 10,
     letterSpacing: 1,
     color: AppColors.textSecondaryHalf,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Label inside a filled field tile — DM Sans Regular 10/15 at optical
-  /// size 9.
+  /// Label inside a filled field tile — DM Sans Regular 10/15.
   ///
   /// Untracked, unlike [groupLabel], and set in sentence case.
   static const TextStyle fieldLabel = TextStyle(
@@ -317,11 +289,10 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w400,
     height: 15 / 10,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Medium-weight label at 10/15, optical size 14 — a pill badge's text, a
-  /// bottom navigation item's label.
+  /// Medium-weight label at 10/15 — a pill badge's text, a bottom navigation
+  /// item's label.
   ///
   /// The widget recolours the selected navigation item with [AppColors.brand].
   static const TextStyle labelSmall = TextStyle(
@@ -330,21 +301,18 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 15 / 10,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize14,
   );
 
-  /// Word under a scale tile — DM Sans Regular 10/12.5 at optical size 9.
+  /// Word under a scale tile — DM Sans Regular 10/12.5.
   static const TextStyle scaleLabel = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 10,
     fontWeight: FontWeight.w400,
     height: 12.5 / 10,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Word under a scale tile on the entry screen — DM Sans Medium 9/11.25 at
-  /// optical size 14.
+  /// Word under a scale tile on the entry screen — DM Sans Medium 9/11.25.
   ///
   /// The widget recolours it with [AppColors.onBrand] on the selected tile.
   static const TextStyle scaleLabelCompact = TextStyle(
@@ -353,22 +321,19 @@ abstract final class AppBodyText {
     fontWeight: FontWeight.w500,
     height: 11.25 / 9,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize14,
   );
 
-  /// Weekday initial over a heatmap — DM Sans Regular 9/13.5 at optical
-  /// size 9.
+  /// Weekday initial over a heatmap — DM Sans Regular 9/13.5.
   static const TextStyle weekdayLabel = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 9,
     fontWeight: FontWeight.w400,
     height: 13.5 / 9,
     color: AppColors.textSecondaryFaint,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Label over a statistic — DM Sans Regular 9/13.5 at optical size 9, 0.225
-  /// track. Same upper-case caveat as [sectionLabel].
+  /// Label over a statistic — DM Sans Regular 9/13.5, 0.225 track. Same
+  /// upper-case caveat as [sectionLabel].
   static const TextStyle statLabel = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 9,
@@ -376,58 +341,51 @@ abstract final class AppBodyText {
     height: 13.5 / 9,
     letterSpacing: 0.225,
     color: AppColors.textSecondary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Primary button label — DM Sans Medium 16/24 at optical size 14.
+  /// Primary button label — DM Sans Medium 16/24.
   static const TextStyle buttonLabel = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 24 / 16,
     color: AppColors.onBrand,
-    fontVariations: AppFonts.opticalSize14,
   );
 
-  /// Icon glyph on a slot row — DM Sans Regular 16/24 at optical size 9.
+  /// Icon glyph on a slot row — DM Sans Regular 16/24.
   static const TextStyle slotIcon = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 24 / 16,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Face inside a scale tile — DM Sans Regular 24/32 at optical size 9.
+  /// Face inside a scale tile — DM Sans Regular 24/32.
   static const TextStyle scaleFace = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 24,
     fontWeight: FontWeight.w400,
     height: 32 / 24,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize9,
   );
 
-  /// Face inside a scale tile on the entry screen — DM Sans Medium 20/20 at
-  /// optical size 14.
+  /// Face inside a scale tile on the entry screen — DM Sans Medium 20/20.
   static const TextStyle scaleFaceCompact = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 20,
     fontWeight: FontWeight.w500,
     height: 1,
     color: AppColors.textPrimary,
-    fontVariations: AppFonts.opticalSize14,
   );
 
-  /// Lock glyph on a closed slot — DM Sans Regular 44/66 at optical size 9.
+  /// Lock glyph on a closed slot — DM Sans Regular 44/66.
   static const TextStyle lockedSlotIcon = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 44,
     fontWeight: FontWeight.w400,
     height: 66 / 44,
     color: AppColors.textPrimaryFaint,
-    fontVariations: AppFonts.opticalSize9,
   );
 }
 
