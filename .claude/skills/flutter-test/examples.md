@@ -24,9 +24,9 @@ Invariant suite: 11 of 11 included.
 | ID     | Type   | Target                | Description                                       | Rationale                                                                     | Deps       | Priority |
 | ------ | ------ | --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- | -------- |
 | UT-001 | Unit   | window computation    | Splits a 16h waking span into three equal windows  | Every other slot behaviour depends on these boundaries being right             | None       | Critical |
-| UT-002 | Unit   | status derivation     | Returns *open* inside the window                   | The entry form is editable only in this state                                  | FakeClock  | Critical |
+| UT-002 | Unit   | status derivation     | Returns *open* inside the window                   | The entry form is editable only in this state                                  | Fixed instant | Critical |
 | WT-002 | Widget | entry page            | Save disabled until a scale and one emotion exist  | Prevents an empty or partial recording being written                           | Fake VM    | Critical |
-| IT-001 | Integration | Onboarding → first recording | Completes onboarding and saves one recording | Validates the full chain: schedule write → window computation → save → chart   | FakeClock  | Critical |
+| IT-001 | Integration | Onboarding → first recording | Completes onboarding and saves one recording | Validates the full chain: schedule write → window computation → save → chart   | Fixed instant | Critical |
 
 ### Invariant Tests (prefix `INV-`)
 
@@ -42,9 +42,9 @@ Note the Rationale column on both: it states the clinical consequence, never the
 
 | ID       | Type   | Target              | Description                                                    | Rationale                                                                                   | Deps          | Priority |
 | -------- | ------ | ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------- | -------- |
-| UT-002-E | Unit   | status derivation   | Open one millisecond before the close, skipped at the close     | Half-open interval — a closed interval would let one instant belong to two slots             | FakeClock     | Critical |
-| UT-003-E | Unit   | window computation  | Spring-forward transition inside the second window              | A duration-based offset silently shifts boundaries by an hour twice a year                   | FakeClock     | High     |
-| WT-003-E | Widget | entry page          | Window closes while the screen is open → becomes read-only      | Without it a save lands after the window shut, violating the no-backfill rule from the UI    | FakeClock     | Critical |
+| UT-002-E | Unit   | status derivation   | Open one millisecond before the close, skipped at the close     | Half-open interval — a closed interval would let one instant belong to two slots             | Fixed instants | Critical |
+| UT-003-E | Unit   | window computation  | Spring-forward transition inside the second window              | A duration-based offset silently shifts boundaries by an hour twice a year                   | Fixed instants | High     |
+| WT-003-E | Widget | entry page          | Window closes while the screen is open → becomes read-only      | Without it a save lands after the window shut, violating the no-backfill rule from the UI    | Fixed instants | Critical |
 
 ## Missing Packages STOP Format
 
@@ -55,7 +55,6 @@ Note the Rationale column on both: it states the clinical consequence, never the
 | -------------- | ------- | ---------------------------------------- |
 | mocktail       | ^1.0.4  | UT-002, WT-002 (service and VM fakes)    |
 | drift_dev      | ^2.x    | INV-08 (migration test harness)          |
-| clock          | ^1.1.1  | FakeClock helper, all time-dependent cases |
 
 Add these to pubspec.yaml? (y/n)
 ```

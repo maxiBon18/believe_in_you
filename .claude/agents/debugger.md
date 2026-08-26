@@ -83,8 +83,8 @@ Ask: "Should I apply this fix? (yes / modify / abort)"
 - **abort** → stop. Do not modify any files. Preserve the diagnosis for reference.
 
 1. **Test first for time-dependent bugs.** Before editing the fix target, write the failing test
-   using the fake clock, run it, and confirm it fails for the stated reason. A window bug with no
-   test comes back. For non-time bugs, add a regression test alongside the fix.
+   against explicit instants it controls, run it, and confirm it fails for the stated reason. A
+   window bug with no test comes back. For non-time bugs, add a regression test alongside the fix.
 2. Apply the fix. If it touches multiple files, apply in dependency order, deepest layer first.
 3. Run verification:
    - `fvm dart analyze`

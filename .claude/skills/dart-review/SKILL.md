@@ -72,10 +72,10 @@ reviewing formatting in a file that fabricates a mood value.
 
 ### Step 4 — Time correctness
 
-- Read `.claude/rules/code/coding-conventions.md` § Time and
-  `.claude/rules/code/domain-layer-rules.md` § Services.
+- Read `CLAUDE.md` § Time handling and `.claude/rules/code/domain-layer-rules.md` § Services.
 - Verify no `DateTime.now()`, `DateTime.timestamp()`, or bare `Timer` in `domain/` or `data/`, and
-  none in a ViewModel used to decide slot state.
+  none in a ViewModel used to decide slot state — instants arrive as parameters.
+- Flag anything that introduces a time-source abstraction: that decision is open and confirm-first.
 - Verify window arithmetic uses local wall-clock time and that the IANA timezone is carried.
 - Flag any comparison between timestamps from different zones without normalization.
 
@@ -103,6 +103,8 @@ reviewing formatting in a file that fabricates a mood value.
 
 - Read `.claude/rules/code/viewmodel-rules.md`.
 - Verify provider lifetime, `ref.watch` vs `ref.read`, `AsyncValue` modeling, and async-gap guards.
+- Flag any Riverpod code generation: `@riverpod` / `@Riverpod`, a `_$` notifier superclass, or a
+  `part '*.g.dart';` in a ViewModel. Providers are declared by hand in this project.
 - Check the entry ViewModel rules specifically: explicit save, no autosave, no optimistic clear, no
   default scale in initial state.
 
@@ -121,8 +123,8 @@ reviewing formatting in a file that fabricates a mood value.
 ### Step 11 — Privacy & security
 
 - Apply the rules in [reference.md](reference.md) § Privacy & Security.
-- Check for secrets, note text or scale values in logs, unencrypted persistence, and any package
-  that could carry data off-device.
+- Check for secrets, unguarded note text or scale values in logs (a `kDebugMode` guard clears the
+  line), unencrypted persistence, and any package that could carry data off-device.
 
 ### Step 12 — Accessibility & responsiveness
 

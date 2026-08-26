@@ -50,7 +50,7 @@ Treat these as requiring a *why* comment, not just a *what*:
 
 - The four bodies of domain logic in `domain-layer-rules.md` § Services — window computation, status
   derivation, mood summarisation, emotion summarisation — whatever they ended up being called.
-- Any branch ordering that looks arbitrary but is not (*not applicable* established before the clock
+- Any branch ordering that looks arbitrary but is not (*not applicable* established before the time
   comparisons, for instance).
 - Any place a nullable type is deliberately kept nullable rather than defaulted.
 - Any absence of an obvious convenience — no `empty()` factory, no backfill method, no interpolation

@@ -98,7 +98,7 @@ instead.
 
 | #   | Severity | File:Line                                              | Issue                                | Planned Fix                       |
 | --- | -------- | ------------------------------------------------------ | ------------------------------------ | --------------------------------- |
-| 4   | 🔴        | `lib/<feature>/domain/services/<name>_service.dart:22` | `DateTime.now()` in a domain service | Inject `Clock`, read through it    |
+| 4   | 🔴        | `lib/<feature>/domain/services/<name>_service.dart:22` | `DateTime.now()` in a domain service | Take the instant as a parameter    |
 | 5   | ⚠️        | `lib/<feature>/domain/services/<name>_service.dart:15` | Naming `Compute_Average`             | Rename to `computeAverage`        |
 
 Paths and symbols in both tables are placeholders — report what you actually found.
@@ -152,7 +152,7 @@ cascade column before choosing it.
 | #   | Category  | File:Line                        | Fix Applied                      | Verified |
 | --- | --------- | -------------------------------- | -------------------------------- | -------- |
 | 1   | Integrity | `lib/.../<mapper>.dart:31`       | Removed default, nullable entity | ✅        |
-| 4   | Violation | `lib/.../<name>_service.dart:22` | Injected `Clock`                 | ✅        |
+| 4   | Violation | `lib/.../<name>_service.dart:22` | Instant passed in                | ✅        |
 
 #### Data Impact
 

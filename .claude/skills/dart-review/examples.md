@@ -11,7 +11,7 @@ are excerpted to three rows to show how the **Issues** column reads, not to rest
 | Area                | Result | Issues                                     |
 | ------------------- | ------ | ------------------------------------------ |
 | Data Integrity      | ✅     | No synthesized values, no writes on read   |
-| Time Correctness    | ✅     | Clock injected, no direct `DateTime.now()` |
+| Time Correctness    | ✅     | Instants passed in, no `DateTime.now()`   |
 | Error Handling      | ✅     | Failed save leaves form retryable          |
 
 All checks passed. Verified 4 files, 0 violations, 0 warnings.
@@ -49,21 +49,24 @@ twelve ✅ with no detail tells the reader nothing about whether the check was r
 **2. Time Correctness — `DateTime.now()` in a domain service**
 
 - **File:** `lib/entry/domain/services/<name>_service.dart:22`
-- **Rule:** `coding-conventions.md` § Time — "Never call `DateTime.now()` in `domain/` or `data/`."
-- **Issue:** `final now = DateTime.now();` instead of reading the injected clock.
+- **Rule:** `CLAUDE.md` § Time handling — "Never call `DateTime.now()` in `domain/` or `data/`."
+- **Issue:** `final now = DateTime.now();` instead of taking the instant as a parameter.
 - **Why it matters:** Slot-boundary behaviour becomes untestable. The rule that a save one
   millisecond before the window closes succeeds and one exactly at the close does not cannot be
-  covered without a fake clock, and that boundary is the one the no-editing invariant rests on.
-- **Fix:** Inject `Clock` through the constructor and call it. Register it in
-  `core/shared/controllers/di.dart` per `di-rules.md` § Core registrations.
+  covered when the service reads the wall clock itself, and that boundary is the one the
+  no-editing invariant rests on.
+- **Fix:** Take the instant as a parameter and let the caller supply it. Do not introduce a
+  time-source abstraction to fix this — that decision is open and confirm-first.
 
-**3. Privacy & Security — Note text written to log**
+**3. Privacy & Security — Note text written to a release log**
 
 - **File:** `lib/entry/presentation/viewmodel/<name>_viewmodel.dart:58`
-- **Rule:** Code Review § Privacy & Security — "Note text, emotion selections, and scale values must
-  never be logged."
-- **Issue:** `log('saving draft: $draft')` interpolates the full draft, including the note.
-- **Fix:** Log the slot identifier and the status transition only.
+- **Rule:** Code Review § Privacy & Security — "Note text, emotion selections, and scale values
+  reach a log only behind a `kDebugMode` guard."
+- **Issue:** `log('saving draft: $draft')` interpolates the full draft, including the note, with no
+  guard, so it ships in release.
+- **Fix:** Wrap it in `if (kDebugMode) { … }`, or log the slot identifier and the status transition
+  only.
 
 Note the difference in weight: the two integrity-adjacent findings earn a *Why it matters* that
 names the clinical consequence; the log leak is self-evident once stated and gets none.

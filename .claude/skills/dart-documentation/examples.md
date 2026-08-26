@@ -7,8 +7,8 @@ rule. Use whatever the code you are documenting is actually called.
 ## 1. Class with public API — normal case
 
 ```dart
-/// Derives the display state of a slot from its window, the clock, and whether
-/// a recording exists.
+/// Derives the display state of a slot from its window, the instant it is
+/// evaluated at, and whether a recording exists.
 ///
 /// Status is never persisted: it is computed on every read from the schedule
 /// that was in effect on that date. See `data-integrity-rules.md` § 2.
@@ -48,7 +48,7 @@ record quietly starts lying.
 ```dart
 /// Classifies a slot whose window has closed.
 ///
-/// The not-applicable check runs before any clock comparison: a slot that
+/// The not-applicable check runs before any time comparison: a slot that
 /// closed before installation must never surface as a skip, and comparing it
 /// against `now` first would classify it as one.
 ExampleStatus _classify(ExampleWindow window, DateTime installedAt) {

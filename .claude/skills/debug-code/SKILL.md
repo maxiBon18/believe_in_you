@@ -125,8 +125,8 @@ Before writing a fix, answer: **did this bug write, alter, or destroy a recordin
 
 - Run `fvm dart analyze` to confirm no new issues introduced.
 - If test files exist for the modified code, run `fvm flutter test <relevant_test_file>`.
-- **Add a failing test first for any time-dependent bug**, using the fake clock, before applying the
-  fix. A window bug that is not covered will come back.
+- **Add a failing test first for any time-dependent bug**, driving the instants it needs, before
+  applying the fix. A window bug that is not covered will come back.
 - If verification fails, revise the fix and re-verify.
 
 ### Step 9 — Report

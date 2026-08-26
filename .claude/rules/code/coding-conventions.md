@@ -1,5 +1,5 @@
 ---
-description: "Naming, typing, null safety, time, and error handling for all Dart code"
+description: "Naming, typing, null safety, and error handling for all Dart code"
 paths:
   - "lib/**/*.dart"
   - "test/**/*.dart"
@@ -90,23 +90,6 @@ drift apart. User-visible strings are covered by the localization rule in
   emotion set is missing. A neutral scale or an empty emotion list supplied by `??` is a bug, not
   defensive coding. See `data-integrity-rules.md`.
 
-## Time
-
-Time is this app's main source of bugs, and most of them are untestable if the clock is implicit.
-
-- Never call `DateTime.now()`, `DateTime.timestamp()`, or `Timer` directly in `domain/` or `data/`.
-  Inject a `Clock` through the constructor. Presentation may read the clock through its ViewModel,
-  never directly.
-- Slot windows are computed from **local wall-clock time**, so a DST change shifts them rather than
-  breaking them. Never build a boundary by adding a `Duration` to an instant: a local day is 23 or
-  25 hours across a transition.
-- A stored wall-clock timestamp cannot be re-interpreted later without knowing its zone. How the
-  IANA timezone identifier travels with a persisted instant is a schema decision — make it
-  explicitly when the store is designed, do not leave it implicit.
-- Compare instants, not formatted strings, and never compare a `DateTime` in one zone against one
-  in another without normalizing first.
-- A test that depends on the real clock is a flaky test. Advance a fake clock instead.
-
 ## Async
 
 - `async`/`await` for single results, `Stream` for sequences. No `.then()` chains, no `catchError`.
@@ -130,9 +113,24 @@ Time is this app's main source of bugs, and most of them are untestable if the c
 
 ## Logging
 
-Logging is local-only and must never carry note text, emotion selections, or scale values. Log
-identifiers, counts, and state transitions. There is no remote sink and no crash reporter — see
+Logging is local-only. There is no remote sink and no crash reporter — see
 `data-integrity-rules.md`.
+
+**Release builds must never carry note text, emotion selections, or scale values into a log line.**
+Unconditional logging is therefore limited to identifiers, counts, and state transitions.
+
+**Debug builds may log values and state in full**, note text included — it is the developer's own
+device and the data never leaves it. Any such line is guarded so it cannot survive into release:
+
+```dart
+if (kDebugMode) {
+  log('saving draft: $draft');
+}
+```
+
+The guard is the rule, not the content: a value-carrying log line without `kDebugMode` around it is
+the defect, and a guarded one is not. `avoid_print` still makes bare `print()` an analyzer error in
+either mode — use `log()` or `debugPrint()`.
 
 ## Size limits
 

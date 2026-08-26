@@ -46,8 +46,8 @@ duration-based offset lands an hour off the intended wall-clock time.
 boundaries, so they are unaffected. Only the live computation for the transition day was wrong.
 
 **Fix:** Rewrote the span arithmetic at `<name>_service.dart:28–41` to operate on local wall-clock
-components and construct each boundary as a local `DateTime`, per `coding-conventions.md` § Time.
-Added two tests advancing the fake clock across a spring-forward and a fall-back transition.
+components and construct each boundary as a local `DateTime`.
+Added two tests evaluating instants across a spring-forward and a fall-back transition.
 
 **Files Read:** 2
 

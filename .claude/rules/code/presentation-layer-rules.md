@@ -55,8 +55,10 @@ beyond the current day.
 ## Style and theme
 
 - No hardcoded colors, text styles, or spacing in widget code.
-- Colors: `lib/core/presentation/ux/theme/color.dart`. Theme components:
-  `lib/core/presentation/ux/theme/theme.dart`.
+- Theme components: `lib/core/presentation/ux/theme/app_theme.dart`.
+- Colors: `lib/core/presentation/ux/theme/app_color.dart`.
+- Typography: `lib/core/presentation/ux/theme/app_typography.dart`
+- Dimensions: `lib/core/presentation/ux/theme/app_dimensions.dart`
 - Express a new design decision as a `ThemeData` token first. Only when the token model can't carry
   it should you create a dedicated `BelieveInYou*` widget.
 - No user-visible string literals in widgets — route them through the app's localization layer.

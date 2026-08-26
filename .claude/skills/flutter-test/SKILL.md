@@ -96,8 +96,8 @@ even in `dev_dependencies` — see `data-integrity-rules.md` § 6.
 After STOP 2 resolves:
 
 3. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
-4. Verify a `FakeClock` helper exists in `test/helpers/`. If not, write it first — most of this
-   app's meaningful tests depend on it.
+4. Time-dependent cases are driven by instants the test declares and passes in. Do not add a
+   time-source package or helper — that decision is open (`CLAUDE.md` § Time handling).
 
 ## Step 7 — Write tests
 
@@ -107,8 +107,8 @@ Order: **Unit → Widget → Integration.**
 - Use `group()`, Arrange-Act-Assert, descriptive names
   (`'returns skipped once the window has closed'`).
 - Comment the test plan ID above each test: `// UT-001`.
-- Every time-dependent test drives the fake clock. No `Future.delayed` to cross a boundary, no real
-  `DateTime.now()`.
+- Every time-dependent test supplies its own instants. No `Future.delayed` to cross a boundary, no
+  real `DateTime.now()`.
 - Mocking strategy per [reference.md](reference.md).
 
 ## Step 8 — Execute

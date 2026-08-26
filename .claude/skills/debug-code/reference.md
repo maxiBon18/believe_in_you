@@ -26,12 +26,12 @@ not a class — find whatever the feature actually called it.
 open; slots shifted by an hour; a slot missing entirely on one date.
 
 **Look at:** window computation, status derivation, schedule persistence, anything calling
-`DateTime.now()` outside a clock.
+`DateTime.now()` inside `domain/` or `data/`.
 
-**Usual causes:** a real clock somewhere instead of the injected one; midnight crossing handled with
-date arithmetic instead of span arithmetic; a DST transition inside a window; comparing a UTC
-instant to a local one; a half-open interval treated as closed, so the closing instant belongs to
-two slots or none.
+**Usual causes:** a wall-clock read inside the logic instead of an instant passed in; midnight
+crossing handled with date arithmetic instead of span arithmetic; a DST transition inside a window;
+comparing a UTC instant to a local one; a half-open interval treated as closed, so the closing
+instant belongs to two slots or none.
 
 ### 2. Schedule changes rewriting history
 
@@ -107,8 +107,8 @@ reusing the service.
 
 ## Reproducing time-dependent bugs
 
-Do not wait for a real boundary. Advance the fake `Clock` to one millisecond either side of the
-window's opening and closing instants, and assert. Any bug reproduced this way should leave a
+Do not wait for a real boundary. Evaluate at instants one millisecond either side of the window's
+opening and closing instants, and assert. Any bug reproduced this way should leave a
 permanent test behind — see `.claude/rules/code/testing-rules.md` § Time.
 
 ## What never counts as a fix

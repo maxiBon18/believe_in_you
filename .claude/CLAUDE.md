@@ -116,10 +116,16 @@ A provider whose only purpose is to construct and expose a dependency belongs in
 Nothing mutable goes in GetIt: Riverpod cannot observe it, so it changes without notifying any
 listener.
 
+**Riverpod providers are hand-written.** No `@riverpod` / `@Riverpod` annotations, no
+`riverpod_annotation` or `riverpod_generator` in `pubspec.yaml`, no `.g.dart` part file in a
+ViewModel. Details in `.claude/rules/code/viewmodel-rules.md` § Riverpod.
+
 ## Time handling
 
-Time is the main source of bugs in this app. Four rules; the full treatment is in
-`.claude/rules/code/coding-conventions.md` § Time.
+Time is the main source of bugs in this app. **How the app reads the current time is not decided
+yet** — there is no time-source abstraction, and introducing one is confirm-first. Until it is
+chosen, code that needs an instant takes it as a parameter rather than reading the wall clock, so
+slot-boundary behaviour stays testable.
 
 ## Working in this repo
 
@@ -137,7 +143,7 @@ After changing code:
 - `fvm dart format .` — `analysis_options.yaml` sets `page_width: 120`, so the default 80-column
   reflow does not happen. Never pass `--line-length`; it would disagree with CI.
 - `fvm dart run build_runner build --delete-conflicting-outputs` — only after touching annotated
-  classes, including Drift tables.
+  classes, Drift tables above all. Never for a provider: Riverpod is used without code generation.
 
 Every `dart` and `flutter` command takes the `fvm` prefix, because the repo pins its SDK through FVM
 and a bare command silently runs a different Flutter version.

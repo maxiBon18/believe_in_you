@@ -20,14 +20,14 @@ packages. Never import `presentation/`.
 
 ## Layout
 
-| Contents                     | Location            |
-| ---------------------------  | ------------------- |
-| DTO interfaces               | `data/repo/dto/`    |
-| DTO (generated)              | `data/source/dto/`  |
-| Drift tables and database    | `data/source/db/`   |
-| Data source interfaces       | `data/repo/source/` |
-| Data source implementations  | `data/source/`      |
-| Repository implementations   | `data/repo/`        |
+| Contents                                    | Location            |
+| ------------------------------------------- | ------------------- |
+| DTO interfaces                              | `data/repo/dto/`    |
+| DTO (generated/implementation)              | `data/source/dto/`  |
+| Drift tables and database                   | `data/source/db/`   |
+| Data source interfaces                      | `data/repo/source/` |
+| Data source implementations                 | `data/source/`      |
+| Repository implementations                  | `data/repo/`        |
 
 This mirrors `CLAUDE.md` § Where things live exactly: the `data/repo/` side holds the contracts a
 repository is written against (data source and DTO interfaces), and the `data/source/` side holds

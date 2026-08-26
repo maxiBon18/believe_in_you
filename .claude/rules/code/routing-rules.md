@@ -99,8 +99,9 @@ Changing navigation or routes is **confirm-first** (`CLAUDE.md`). Ask before ste
 ## Observers
 
 Route observation is registered once, where the router is built — not per page. Observers log
-**route names only**. A route config carries a date and a slot; logging the config logs health data.
-See `data-integrity-rules.md` § 6.
+**route names only** unless the line is guarded by `kDebugMode`. A route config carries a date and a
+slot; logging the config in a release build logs health data. Under `kDebugMode` the full config may
+be logged. See `data-integrity-rules.md` § 6 and `coding-conventions.md` § Logging.
 
 ## Notification launch
 

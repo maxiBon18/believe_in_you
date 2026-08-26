@@ -7,16 +7,17 @@ holds health data and has no backend, which changes what "security" means here: 
 attacker on the wire, it is data leaving the device at all.
 
 - No credentials, API keys, or secrets in the codebase.
-- **No user data in logs or print statements** (`print()`, `debugPrint()`, `log()`). Note text,
-  emotion selections, and scale values must never be logged. Identifiers, counts, and state
-  transitions are fine.
+- **No user data in a release-build log line** (`print()`, `debugPrint()`, `log()`). Note text,
+  emotion selections, and scale values reach a log only behind a `kDebugMode` guard; unguarded,
+  log identifiers, counts, and state transitions. A value-carrying line without the guard is the
+  finding — a guarded one is not. `print()` is an analyzer error either way.
 - **No package with a transport dependency** — analytics, crash reporting, remote config, or an
   HTTP client. A crash reporter can carry note text off-device, which is why it is excluded even
   though it would be useful.
 - The database is encrypted at rest. Preferences holding anything about recordings use secure
   storage, not `SharedPreferences`.
-- Route observers and provider loggers record names only, never arguments — a route argument carries
-  a date and a slot.
+- Route observers and provider loggers record names only, never arguments, unless the line is
+  `kDebugMode`-guarded — a route argument carries a date and a slot.
 - Export writes to a temporary location and is shared through the OS share sheet; it is not left in
   a world-readable directory.
 

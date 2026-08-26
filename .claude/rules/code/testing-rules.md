@@ -19,7 +19,7 @@ paths:
 
 | Layer        | Test with                  | Fake out                         |
 | ------------ | -------------------------- | -------------------------------- |
-| Services     | plain unit tests           | repository interfaces, the clock |
+| Services     | plain unit tests           | repository interfaces            |
 | Repositories | unit tests                 | data source interfaces           |
 | Migrations   | Drift migration harness    | nothing — run against real schemas |
 | ViewModels   | `ProviderContainer.test()` | services, via provider overrides |
@@ -35,8 +35,9 @@ verified is that data survives, and a fake proves nothing about that.
 
 ## Time
 
-Every time-dependent test uses the injected `Clock`. No `DateTime.now()`, no `Future.delayed` to
-cross a boundary.
+Every time-dependent test fixes the instants it exercises and passes them in. No `DateTime.now()`,
+no `Future.delayed` to cross a boundary. How the app sources the current time is still open
+(`CLAUDE.md` § Time handling) — do not introduce a mechanism for it from a test.
 
 The slot boundary cases below are the ones that actually break. Each deserves a named test:
 
@@ -60,7 +61,8 @@ the ones a future refactor will quietly violate:
 - Saving into a closed window fails rather than succeeding late.
 - A migration from schema version *n* to *n+1* preserves every existing recording.
 - Home resolved with no schedule redirects rather than creating one.
-- No log line emitted during a save contains note text, an emotion, or a scale value.
+- No *unguarded* log line emitted during a save contains note text, an emotion, or a scale value —
+  value-carrying lines sit behind `kDebugMode`, so a release build emits none.
 
 A bug fix lands with a test that fails before the fix.
 
@@ -70,8 +72,7 @@ A bug fix lands with a test that fails before the fix.
   approval gate in the `/flutter-test` skill, not something to do silently. Never add a second
   mocking package alongside it.
 - Prefer hand-written fakes for interfaces with two or three methods — they read better than mock
-  setup and don't break on signature changes. `Clock` in particular should be a hand-written fake
-  with an `advance(Duration)` method, not a mock.
+  setup and don't break on signature changes.
 - Riverpod: override providers on the container rather than mocking `ref`. Use
   `ProviderContainer.test()` so disposal is automatic.
 

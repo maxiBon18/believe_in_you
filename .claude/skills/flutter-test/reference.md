@@ -53,7 +53,7 @@ actually built.
 | INV-07 | completion rate         | *Not applicable* slots are excluded from the denominator          |
 | INV-08 | migration n → n+1       | Every pre-existing recording survives with identical values       |
 | INV-09 | export                  | Export summary equals the on-screen summary for the same week     |
-| INV-10 | logging                 | No note text, emotion, or scale value appears in any log output   |
+| INV-10 | logging                 | No note text, emotion, or scale value in log output outside `kDebugMode` |
 | INV-11 | router guards           | Home with no schedule redirects and writes no schedule            |
 
 ## Edge Case Checklist
@@ -108,7 +108,7 @@ For invariant tests, the rationale states the clinical consequence, not the rule
 
 | Dependency                    | Approach                                                          |
 | ----------------------------- | ----------------------------------------------------------------- |
-| `Clock`                       | Hand-written `FakeClock` with `advance(Duration)`. Never a mock    |
+| Current time                  | Instants declared by the test and passed in. No time-source package |
 | Drift database                | In-memory instance (`NativeDatabase.memory()`)                    |
 | Migrations                    | Real schema versions via Drift's migration test harness           |
 | Local notifications           | Fake implementing the scheduler interface; assert on scheduled set |
@@ -131,7 +131,7 @@ No HTTP, Firebase, or auth mocking — none of it exists in this app.
 - Naming: `'[behavior] when [condition]'`.
 - Grouping: one top-level `group()` per class under test, named after that class.
 - ID comment above each test: `// UT-001: [description]`.
-- Time is always driven by `FakeClock`.
+- Time is always fixed by instants the test supplies, never read from the wall clock.
 
 ## File Organization
 
