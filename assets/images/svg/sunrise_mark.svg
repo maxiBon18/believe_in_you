@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 104" width="160" height="104" role="img" aria-label="Sunrise mark">
+  <title>Sunrise mark</title>
+  <!-- All shapes share the centre (80, 100): the baseline of the mark. -->
+
+  <!-- Outer dome: filled semicircle, r = 68 -->
+  <path d="M12 100 A68 68 0 0 1 148 100 Z" fill="#DCEDF4"/>
+
+  <!-- Rim of the dome (arc only, no line along the flat base) -->
+  <path d="M12 100 A68 68 0 0 1 148 100"
+        fill="none" stroke="#AFDBE3" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Middle arc, r = 48 -->
+  <path d="M32 100 A48 48 0 0 1 128 100"
+        fill="none" stroke="#75C3CE" stroke-width="3.4" stroke-linecap="round"/>
+
+  <!-- Inner arc, r = 28 -->
+  <path d="M52 100 A28 28 0 0 1 108 100"
+        fill="none" stroke="#33A9B5" stroke-width="4.4" stroke-linecap="round"/>
+
+  <!-- Sun, sitting on the apex of the inner arc -->
+  <circle cx="80" cy="72" r="11" fill="#0E9AA7"/>
+</svg>
