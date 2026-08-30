@@ -13,9 +13,9 @@ without a widget tree, a database, or a hidden time source.
 
 ## Imports
 
-Import nothing from `data/` or `presentation/`, and nothing SDK-specific (Drift,
-`flutter_local_notifications`, `package:flutter/material.dart`). Pure Dart plus
-`package:flutter/foundation.dart` if you need `@immutable`.
+Import nothing from `data/` or `presentation/`, and nothing SDK- or plugin-specific (Drift, a
+platform plugin, `package:flutter/material.dart`). Pure Dart plus `package:flutter/foundation.dart`
+if you need `@immutable`.
 
 If you find yourself needing a type from `data/`, the type is misplaced: move it to
 `domain/entities/` and have the row class map onto it.
@@ -38,10 +38,10 @@ needs and `data/` supplies it. That inversion is what keeps the dependency arrow
 - Entities model the app's concepts, not the storage format. If a field only exists because Drift
   needs it, it belongs on the row class instead.
 - Prefer immutable entities with value equality.
-- Slot status is a **sealed** type, not an enum with a `default` branch anywhere. Its states are
-  distinguishable and non-interchangeable — in particular *skipped* and *not applicable* are
-  different facts about a closed window. Handle it with exhaustive `switch` so that adding a state
-  breaks every site that must change.
+- A status whose states are distinguishable and non-interchangeable is a **sealed** type, not an
+  enum with a `default` branch anywhere. Handle it with exhaustive `switch` so that adding a state
+  breaks every site that must change. Two states that mean different things must not collapse into
+  one just because they render the same today.
 
 ## Services
 
@@ -51,4 +51,7 @@ needs and `data/` supplies it. That inversion is what keeps the dependency arrow
 - Business rules live here: validation, invariants, calculations, and workflows spanning more than
   one repository. If the rule would still hold in a CLI version of this app, it is a service's job —
   not a ViewModel's.
+- Derivation from stored facts is a service, not a stored column
+  (`data-integrity-rules.md` § 3). Written as pure functions over their inputs, these stay
+  unit-testable without a database.
 - Services return entities or typed failures, never row classes and never `Map<String, dynamic>`.

@@ -22,14 +22,14 @@ Stage → approve message → commit → approve push → push. Two hard stops, 
 ```
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `revert`.
-Scope: feature or module name — `entry`, `history`, `export`, `settings`, `onboarding`, `core` examples.
+Scope: the feature or module name as it exists under `lib/` (`CLAUDE.md` § Architecture), or `core`
+for shared code and `config` for tooling.
 
 ## Instructions
 
 ### Step 1 — Confirm the repository and stage
 
-- Run `git rev-parse --show-toplevel` and confirm it is the `believe_in_you` project root. If it is
-  not, stop.
+- Run `git rev-parse --show-toplevel` and confirm it is this project's root. If it is not, stop.
 - Run `git status --short` **before staging**. If anything unexpected is untracked — build output,
   `.env`, an editor scratch file, a database dump — list it and ask before continuing. `git add .`
   stages whatever is there, and `.gitignore` does not cover files nobody has thought about yet.

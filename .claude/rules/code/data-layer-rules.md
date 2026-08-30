@@ -10,8 +10,7 @@ paths:
 The data layer owns everything storage-specific. Nothing above it should be able to tell whether
 data came from Drift, a file, or platform storage.
 
-There is no network in v1. If you find yourself reaching for an HTTP client, stop — see
-`data-integrity-rules.md` § 6.
+If you find yourself reaching for an HTTP client, stop — see `data-integrity-rules.md` § 5.
 
 ## Imports
 
@@ -45,24 +44,25 @@ the concrete, storage-specific implementations.
 - Re-run codegen after any change to a table (command in `CLAUDE.md`).
 
 Table and column names, the identity strategy, and whether deletion is soft or hard are **decided
-when the first table is written**, not here — the whole schema is confirm-first (`CLAUDE.md`
-§ Confirm first). Decide them once and apply them uniformly; a store where half the tables soft
-delete is a store nobody can reason about. Whatever is chosen, § 8 of `data-integrity-rules.md`
-still binds: no path may discard a recording.
+when the first table is written**, not here — the whole schema is confirm-first, so ask before
+writing the first table. Decide them once and apply them uniformly; a store where half the tables soft
+delete is a store nobody can reason about. Whatever is chosen, § 6 of `data-integrity-rules.md`
+still binds: no path may discard user data.
 
 ### Migrations
 
 Schema changes are a **confirm-first** action. Every migration ships with a test that starts from
 the previous schema version, applies the migration, and asserts that existing rows survive intact.
-See `data-integrity-rules.md` § 8 — losing recordings here is unrecoverable.
+See `data-integrity-rules.md` § 6 — losing user data here is unrecoverable.
 
 ## DTOs
 
-`freezed` + `json_serializable` is used for the **export payload only** — the JSON dump offered
-from Settings. Everything else is a Drift row class.
+A hand-written DTO exists only where the storage format is not a Drift row — a JSON payload, a file
+on disk, a platform channel response. Everything backed by a table uses its generated row class.
 
-Freezed 3 requires the class to be `abstract` (single class) or `sealed` (union), and it no longer
-generates `when`/`map` — use Dart pattern matching instead:
+Where a JSON DTO is needed, `freezed` + `json_serializable` is the shape. Freezed 3 requires the
+class to be `abstract` (single class) or `sealed` (union), and it no longer generates `when`/`map` —
+use Dart pattern matching instead:
 
 <example>
 
@@ -81,7 +81,8 @@ abstract class ExampleDto with _$ExampleDto {
 
 </example>
 
-Shape only — the export payload's own fields are decided when the export feature is built.
+Shape only — the payload's own fields are decided when the feature that needs it is built. Neither
+package is installed until a feature actually requires one (`CLAUDE.md` § Do not).
 
 ## Repositories
 
@@ -95,23 +96,23 @@ Shape only — the export payload's own fields are decided when the export featu
   in `coding-conventions.md`). A `SqliteException` reaching a ViewModel is a bug.
 - Caching and retry policy live in the repository, not in the data source and not in a service.
 
-### Repository rules specific to this app
+### Behaviour the storage design has to deliver
 
-These constrain behaviour, not schema. The columns and constraints that deliver them are chosen
-when the tables are written.
+These constrain behaviour, not schema. The columns and constraints that deliver them are chosen when
+the tables are written.
 
-- **A read never writes.** Fetching a day's slots must not create rows for the missing ones. The
-  repository returns the recordings that exist; a domain service decides what the gaps mean.
+- **A read never writes.** Fetching a range must not create rows for the parts of it that are empty.
+  The repository returns the records that exist; a domain service decides what the gaps mean
+  (`data-integrity-rules.md` §§ 2–3).
 - **No default row.** No `empty()` factory, no neutral placeholder returned when a row is absent.
   Return `null` or an empty collection and let the domain service handle it.
-- **A recording stays interpretable on its own.** Reading a past recording must not depend on the
-  schedule history still being intact, so the window it belonged to has to be recoverable from the
-  recording itself. Deciding how — denormalised onto the row, or otherwise — is part of designing
-  the schema.
-- **A schedule change never rewrites history.** A past slot keeps the schedule that was in effect
-  when it happened; a new wake/sleep pair applies going forward. A storage design that updates a
-  schedule in place silently relabels every slot already recorded under it.
-- **One recording per slot is enforced by the database**, not only in code. The uniqueness key is
-  the slot's own identity — the wake date it belongs to, not the calendar date of its timestamp,
-  which differ whenever the waking span crosses midnight. Keying on the timestamp lets a
-  post-midnight slot duplicate.
+- **A record stays interpretable on its own.** Reading an old record must not depend on the current
+  configuration, or on the configuration history still being intact. Whatever the record's meaning
+  depends on has to be recoverable from the record itself — denormalised onto the row, or otherwise.
+  Deciding how is part of designing the schema.
+- **Changing configuration never rewrites history.** A new setting applies going forward; records
+  already written keep the settings they were written under. A design that updates a configuration
+  row in place silently relabels every record made under the old one.
+- **Uniqueness is enforced by the database**, not only in code. The key is the record's own logical
+  identity, which is not always the raw timestamp — a derived or shifted identity that the domain
+  uses must be the one the constraint is written on, or duplicates slip through at the edges.

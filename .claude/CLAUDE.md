@@ -35,51 +35,19 @@ touch a Dart file.
 Entry cost is a hard budget on top of these: **under 20 seconds from cold launch to saved
 recording.**
 
-## Vocabulary
-
-One word per concept, in code, copy, and commits. Two words for one concept is how a rule stops
-being findable.
-
-| Term | Means | Never |
-| --- | --- | --- |
-| **recording** | One saved observation for one slot | entry, log, record |
-| **slot** | One of the three daily moments | period, session, timeslot |
-| **window** | The time range a slot is open for | interval, range |
-| **schedule** | A wake/sleep pair that applies from a given date onward | settings, times |
-| **skipped** | A slot whose window closed with no recording | missed, empty |
-| **not applicable** | A slot whose window closed before installation | skipped |
-| **scale** | The 1–5 value | score, rating, mood level |
-| **export** | The weekly PDF for the clinician | report, summary |
-
-The vocabulary fixes **concepts, not identifiers**. Class, table, column, service, and route names
-are chosen when the feature that needs them is built. No rule file in `.claude/` prescribes one, and
-none should start to — a name written down before the code exists is a name the code will disagree
-with. Where a rule needs to point at something unbuilt, it describes the role (*the service that
-derives slot status*) rather than inventing a symbol.
-
 ## Stack and system boundaries
 
 Do not assume versions — pinned numbers go stale silently. Read `pubspec.yaml` for packages,
 `fvm flutter doctor` for Flutter/Dart/Android SDK/Xcode, `fvm --version` for FVM.
-
-Persistence is Drift over SQLite, encrypted at rest, and the only store. Notifications are
-`flutter_local_notifications`, one per slot, scheduled on-device. Charts are `fl_chart`. Export is
-`pdf` + `printing`, generated on-device and shared through the OS share sheet. The Flutter app holds
-all business logic.
-
-**`pubspec.yaml` is still the Flutter starter template.** None of the above is installed yet. Do not
-write code against a package before it is added, and do not add one without approval.
 
 ## Architecture
 
 Clean Architecture, **MVVM**, **feature-first**. `/lib` holds `core/` and one self-contained
 directory per feature, each split into `data/`, `domain/`, `presentation/`, `shared/`.
 
-Features: `onboarding`, `entry`, `history`, `export`, `settings`.
-
-Navigation is a **custom router built on Navigator 2.0**, reached only through the abstract
-`AppRouter` contract. Do not add `go_router` or another navigation package. Details in
-`.claude/rules/code/routing-rules.md`.
+Navigation is **`go_router`**, reached only through the abstract `AppRouter` contract — the
+`GoRouter` itself never leaves `core/presentation/ux/routing/`, and no other navigation package is
+added alongside it. Details in `.claude/rules/code/routing-rules.md`.
 
 ### Dependency rule
 
@@ -150,27 +118,8 @@ and a bare command silently runs a different Flutter version.
 
 ### Project skills and agents
 
-Run with `/name`; none of them load on their own.
-
-| Skill | Does |
-| --- | --- |
-| `/dart-review` | 12-area review of `lib/**/*.dart`, integrity first |
-| `/debug-code` | Diagnose a bug with minimal scanning; rules out intended behaviour first |
-| `/flutter-test` | Test plan → approval → execution, with the mandatory invariant suite |
-| `/dart-documentation` | Dartdoc standards, terminology, invariant comments |
-| `/git-flow` | Stage, Conventional Commit, push, with approval gates |
-| `/new-feature` | Scaffold a feature's Clean Architecture directories |
-
-Agents `code-reviewer`, `debugger`, and `doc-generator` wrap the first three plus documentation, and
-add their own approval gates. Do not run them on speculation — they edit files.
-
-## Confirm first
-
-Stop and ask before creating a feature module or top-level directory; choosing between architectural
-options (`Notifier` vs `AsyncNotifier`, one provider vs several); modifying `core/`, where the blast
-radius spans every feature; changing navigation, routes, or DI scope; **changing the database schema
-or writing a migration**; introducing a pattern not already in the codebase; or writing
-platform-specific code (`Platform` checks, conditional imports).
+Skills run with `/name`; none of them load on their own. Agents `code-reviewer`, `debugger`, and
+`doc-generator` add their own approval gates — do not run them on speculation, they edit files.
 
 ## Do not
 

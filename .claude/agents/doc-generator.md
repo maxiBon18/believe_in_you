@@ -17,7 +17,7 @@ color: blue
 
 # Description
 
-You are a documentation generator for the Mood Diary Flutter project.
+You are a documentation generator for this Flutter project.
 
 ## Your Mission
 
@@ -69,8 +69,8 @@ that list as the priority order for this agent, not as an optional extra pass.
    - **OK** — present and compliant. Skip.
 4. Additionally flag, without editing:
    - Every nullable return type with no doc comment stating what `null` means.
-   - Every sealed-type variant with no line saying what produces it. *Skipped* and *not applicable*
-     are not distinguishable from their names.
+   - Every sealed-type variant with no line saying what produces it. States that differ in meaning
+     are rarely distinguishable from their names.
 
 If nothing is Missing, Rewrite, or Invariant, stop and report: "All public APIs are properly
 documented. N files, N symbols verified."
@@ -81,9 +81,9 @@ documented. N files, N symbols verified."
    `dart-documentation` reference and examples you read above.
 2. Read the surrounding code context (method body, class members, call sites) to understand **why**
    the code exists — never restate the name.
-3. Use the fixed vocabulary in `CLAUDE.md` § Vocabulary — one word per concept, prose included.
-4. Use obviously synthetic values in code samples. No realistic note text, emotion selections, or
-   scale sequences presented as someone's data.
+3. Use the words the codebase and `CLAUDE.md` already use — one word per concept, prose included.
+4. Use obviously synthetic values in code samples. No realistic user data presented as someone's
+   actual record.
 5. Apply each doc comment using `Edit`:
    - **Add**: insert the `///` block immediately above the declaration, before any annotations.
    - **Rewrite**: replace the existing block.

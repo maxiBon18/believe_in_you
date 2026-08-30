@@ -12,9 +12,9 @@ access — everything comes from a ViewModel (`viewmodel-rules.md`).
 
 ## Naming and placement
 
-- Page file `<feature>_page.dart` in `presentation/ux/pages/`; page class is
-  `BelieveInYou<Name>Page`.
-- Widget classes carry the same `BelieveInYou` prefix: `BelieveInYou<Name>`.
+- Page file `<feature>_page.dart` in `presentation/ux/pages/`; the page class carries the app's
+  widget prefix and the `Page` suffix — match the prefix the existing pages and widgets use.
+- Widget classes carry the same prefix.
 - Every page uses the shared app page shell in `core/` as its root widget — it supplies the app
   chrome, safe-area handling, and loading overlay wiring. A page that builds its own `Scaffold`
   bypasses all three.
@@ -31,7 +31,8 @@ access — everything comes from a ViewModel (`viewmodel-rules.md`).
 - Pass `Key` to widgets rendered inside lists or behind conditionals, so element reuse doesn't carry
   the wrong state across.
 - Dispose every controller, subscription, and animation you create.
-- Navigation goes through the `AppRouter` contract, never `Navigator.push` with a widget literal
+- Navigation goes through the `AppRouter` contract — never `context.go` / `context.push` or another
+  `GoRouter` context extension, and never `Navigator.push` with a widget literal
   (`routing-rules.md`). The view decides *when* to navigate; the ViewModel never does.
 
 ## Performance
@@ -43,14 +44,14 @@ lists, no expensive work in `build()`). Project-specific additions:
 - Watch the narrowest slice of state that a widget needs (`ref.watch(p.select(...))`) rather than
   the whole object, so an unrelated field change doesn't rebuild the subtree.
 - Animate with `AnimatedBuilder`/`AnimatedWidget` driving a leaf, not `setState` on a parent.
-- Chart data is computed by a domain service and passed in ready to plot. No aggregation inside
-  `build()`.
-- Move CPU-bound work off the UI isolate with `Isolate.run` (or `compute`). PDF rendering qualifies.
+- Aggregated or chart-ready data is computed by a domain service and passed in ready to render. No
+  aggregation inside `build()`.
+- Move CPU-bound work off the UI isolate with `Isolate.run` (or `compute`) — document rendering and
+  large exports qualify.
 
-**Cold start is a product requirement, not a nicety.** The entry budget is under 20 seconds from
-cold launch to saved recording, and launch is the part the user cannot skip. Nothing blocking goes
-on the path to first frame — no eager chart computation, no export warm-up, no schedule recompute
-beyond the current day.
+**Cold start is a product requirement, not a nicety.** `CLAUDE.md` states the app's time-to-task
+budget, and launch is the part the user cannot skip. Nothing blocking goes on the path to first
+frame — no eager aggregation, no warm-up of a feature the user has not opened.
 
 ## Style and theme
 
@@ -60,49 +61,36 @@ beyond the current day.
 - Typography: `lib/core/presentation/ux/theme/app_typography.dart`
 - Dimensions: `lib/core/presentation/ux/theme/app_dimensions.dart`
 - Express a new design decision as a `ThemeData` token first. Only when the token model can't carry
-  it should you create a dedicated `BelieveInYou*` widget.
-- No user-visible string literals in widgets — route them through the app's localization layer.
-  Strings are maintained in English and Italian.
-
-### Mood colour rule
-
-**Never use a red-to-green ramp for mood values.** A red bad day reads as a failure and a green good
-day reads as a success; the data is neither. Use a single hue varying in lightness and saturation.
-
-This applies to the trend chart, the History heatmap, the scale selector, and the export. Semantic
-red stays available for genuinely destructive actions (delete all data) and nowhere else.
-
-### Scale assets
-
-The five scale faces are **bundled assets**, not system emoji glyphs. Platform emoji rendering
-differs sharply between iOS, Android vendors, and OS versions, and a face that reads as *sad* on one
-device reads as *distressed* on another. The face is a scale anchor, so its appearance is fixed.
+  it should you create a dedicated prefixed widget.
+- No user-visible string literals in widgets — route them through the app's localization layer, in
+  every locale the project ships.
+- Anchors the user reads as a fixed scale (icons, faces, symbols standing for a value) are **bundled
+  assets, not system emoji glyphs**. Platform emoji rendering differs sharply between iOS, Android
+  vendors, and OS versions, and a glyph that reads one way on one device reads differently on
+  another.
 
 ## Copy
 
-The tone rules in `data-integrity-rules.md` § 5 are enforced here, since this is where copy lives:
+Copy is where the project's tone rules are actually enforced — `CLAUDE.md` § Invariants states them,
+and this is where they are broken. Two that hold regardless of product:
 
-- No celebratory language, no encouragement, no praise for consistency.
-- No admonishing language, no guilt framing, no counting of missed days as a deficit.
-- Completion rate is stated neutrally (`18 of 21 recordings`) and never appears on the entry screen.
-- Notifications prompt an action; they do not comment on past behaviour.
-- Empty states are factual (`No recordings yet`), not motivational.
+- Factual over evaluative. State what happened; do not praise or admonish the user for it.
+- Empty states describe the absence, they do not motivate.
 
 ## Responsive and accessible
 
 - No fixed pixel widths on layout containers; use `Expanded`, `Flexible`, `FractionallySizedBox`,
   or `LayoutBuilder`.
-- Handle insets with `SafeArea` / `MediaQuery.padding`; handle keyboard overlap on the note field
-  with `SingleChildScrollView` or `resizeToAvoidBottomInset`.
+- Handle insets with `SafeArea` / `MediaQuery.padding`; handle keyboard overlap on text input with
+  `SingleChildScrollView` or `resizeToAvoidBottomInset`.
 - Text scales with the system setting. Use `MediaQuery.textScalerOf(context)` — `textScaleFactor` is
-  removed. The scale selector and emotion chips must survive the largest system text size without
-  clipping; they are the two places most likely to break.
-- Interactive targets are at least 48x48 logical pixels. The scale selector's five targets are the
-  most-used control in the app — size them generously past that minimum.
-- Every scale face carries a `Semantics` label with its word, so the scale is usable without seeing
-  the image.
-- Colour is never the only carrier of meaning. Completed, skipped, and locked slots differ in label
-  and shape, not only in tint.
+  removed. Compact multi-item controls (selectors, chip rows) must survive the largest system text
+  size without clipping; they are the first thing to break.
+- Interactive targets are at least 48x48 logical pixels. The app's most-used control is sized
+  generously past that minimum.
+- Every icon or image carrying meaning has a `Semantics` label with that meaning in words, so the
+  control is usable without seeing it.
+- Colour is never the only carrier of meaning. States that differ must differ in label or shape, not
+  only in tint.
 - Platform differences go through `Platform` checks or conditional imports, never through runtime
-  feature guessing. Writing either is **confirm-first** (`CLAUDE.md`) — ask before adding the first
-  one to a file.
+  feature guessing. Writing either is **confirm-first** — ask before adding the first one to a file.

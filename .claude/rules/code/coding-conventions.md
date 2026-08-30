@@ -10,9 +10,9 @@ paths:
 `analysis_options.yaml` is the enforcement layer. These rules cover what the linter cannot check,
 plus the handful of lints strict enough to change how code is shaped.
 
-Names come from the fixed vocabulary in `CLAUDE.md` § Vocabulary. `recording`, not entry or log;
-`scale`, not score or rating. A symbol named off-vocabulary is a naming violation even when the
-casing is right.
+One word per concept, used in code, copy, and commits alike — match the words the existing code and
+`CLAUDE.md` already use rather than introducing a synonym. A symbol that invents a second word for an
+existing concept is a naming violation even when the casing is right.
 
 ## Naming
 
@@ -47,7 +47,7 @@ These are not preferences — code that ignores them fails `fvm dart analyze`:
 | Rule | Consequence |
 | --- | --- |
 | `always_specify_types` | `final String name = …`, never `final name = …`. Type arguments too: `<String>[]`, `Map<String, Object?>{}` |
-| `always_use_package_imports` | `package:believe_in_you/…` everywhere. **No relative imports, not even within a feature** |
+| `always_use_package_imports` | `package:<app_package>/…` everywhere. **No relative imports, not even within a feature** |
 | `always_declare_return_types` | Every function and method writes its return type, including `void` |
 | `always_put_required_named_parameters_first` | Required named parameters precede optional ones in the signature |
 | `prefer_single_quotes` | `'text'`, not `"text"` |
@@ -66,18 +66,17 @@ type written out, `final (int, String) pair = …`.
 - `@immutable` on classes whose fields are all final.
 - Prefer records over one-off classes when returning two or three values with no behavior.
 - Prefer exhaustive `switch` expressions over `if`/`else` chains on sealed types — the compiler
-  then catches every missed case when a new variant is added. Slot status is the case where this
-  matters most: adding a state must break every site that renders one, so model it as a sealed type
-  and never add a `default` branch.
+  then catches every missed case when a new variant is added. This matters most for a status type
+  whose states are non-interchangeable: adding a state must break every site that renders one, so
+  model it as a sealed type and never add a `default` branch.
 - Use `=>` for single-expression functions and getters.
 
 ## Constants and magic values
 
 No literal numbers, durations, keys, or file-name fragments inline. Put them in the feature's
-`shared/constants/`. This includes the domain's structural constants — slot count, scale bounds,
-the notification offset, the entry-time budget — which appear in more than one place and must not
-drift apart. User-visible strings are covered by the localization rule in
-`presentation-layer-rules.md`.
+`shared/constants/`. This includes the domain's structural constants — bounds, counts, offsets,
+budgets — which appear in more than one place and must not drift apart. User-visible strings are
+covered by the localization rule in `presentation-layer-rules.md`.
 
 ## Null safety
 
@@ -86,9 +85,9 @@ drift apart. User-visible strings are covered by the localization rule in
 - No `?.` chain deeper than two levels; bind an intermediate variable instead.
 - A nullable return type needs a doc comment stating what `null` means. If `null` has no distinct
   meaning, return a non-nullable type with a default.
-- **Never `??` a default onto a recorded value.** A missing mood value is missing; a missing
-  emotion set is missing. A neutral scale or an empty emotion list supplied by `??` is a bug, not
-  defensive coding. See `data-integrity-rules.md`.
+- **Never `??` a default onto a user-recorded value.** A missing value is missing. A neutral number
+  or an empty collection supplied by `??` in place of an absent record is a bug, not defensive
+  coding. See `data-integrity-rules.md` § 1.
 
 ## Async
 
@@ -104,23 +103,22 @@ drift apart. User-visible strings are covered by the localization rule in
   so the stack trace survives.
 - Never swallow: log, rethrow, or convert into a typed failure. An empty `catch` block is a bug.
 - Define domain-specific exceptions in `domain/` and translate infrastructure exceptions
-  (`SqliteException`, `DriftWrappedException`, `PlatformException` from notifications or the share
-  sheet) into them at the repository boundary, so nothing above `data/` has to know the storage
-  engine.
-- **A failed write is never silently downgraded to a no-op.** If a recording cannot be saved, the
-  user is told, and the entry screen stays in a state they can retry from. Losing a recording
+  (`SqliteException`, `DriftWrappedException`, `PlatformException` from a plugin) into them at the
+  repository boundary, so nothing above `data/` has to know the storage engine or the plugin.
+- **A failed write is never silently downgraded to a no-op.** If the user's input cannot be saved,
+  the user is told, and the screen stays in a state they can retry from. Losing user-entered data
   silently is worse than crashing.
 
 ## Logging
 
 Logging is local-only. There is no remote sink and no crash reporter — see
-`data-integrity-rules.md`.
+`data-integrity-rules.md` § 5.
 
-**Release builds must never carry note text, emotion selections, or scale values into a log line.**
-Unconditional logging is therefore limited to identifiers, counts, and state transitions.
+**Release builds must never carry user-recorded values into a log line.** Unconditional logging is
+therefore limited to identifiers, counts, and state transitions.
 
-**Debug builds may log values and state in full**, note text included — it is the developer's own
-device and the data never leaves it. Any such line is guarded so it cannot survive into release:
+**Debug builds may log values and state in full** — it is the developer's own device and the data
+never leaves it. Any such line is guarded so it cannot survive into release:
 
 ```dart
 if (kDebugMode) {

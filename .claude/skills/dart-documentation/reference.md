@@ -2,7 +2,7 @@
 
 ## Language
 
-- All documentation in English, including in a codebase whose product docs are bilingual.
+- All documentation in English, whatever locales the product itself ships in.
 
 ## Philosophy
 
@@ -11,17 +11,16 @@
 - No useless documentation. If a doc comment restates the obvious from the name, remove it.
 - Use consistent terminology throughout the codebase.
 - **Document deliberate absences.** In this project the most valuable comments explain why something
-  simpler was rejected — why there is no default, no backfill, no interpolation. Code that looks
-  needlessly awkward gets "cleaned up" unless the comment stops it.
+  simpler was rejected — why there is no default, no retroactive write path, no interpolation. Code
+  that looks needlessly awkward gets "cleaned up" unless the comment stops it.
 
 ## Terminology
 
-The vocabulary is fixed in `CLAUDE.md` § Vocabulary, which is already in context — use that table,
-do not restate it here. Two words for one concept is how a rule stops being findable.
+Use the words the codebase and `CLAUDE.md` already use; do not introduce a synonym for a concept
+that already has one. Two words for one concept is how a rule stops being findable.
 
-Doc comments carry one extra obligation the table does not: "score" and "rating" stay out of prose
-as well as identifiers. They carry an evaluative sense this app deliberately does not have, and a
-comment is where it creeps back in.
+Doc comments carry one extra obligation the table does not: a word the project rejects as evaluative
+stays out of prose as well as identifiers. A comment is where it creeps back in.
 
 ## Commenting Style
 
@@ -51,9 +50,8 @@ comment is where it creeps back in.
 - **Always document a nullable return type**, stating what `null` means. In this codebase `null`
   frequently means "the user did not record anything", which is a load-bearing distinction, not an
   edge case.
-- **Always document sealed-type variants.** Each slot-status variant needs a line saying what
-  produces it, because the difference between *skipped* and *not applicable* is not inferable from
-  the names.
+- **Always document sealed-type variants.** Each variant needs a line saying what produces it,
+  because states that differ in meaning are rarely distinguishable from their names.
 - Consider library-level doc comments (`/// {@category ...}`) for general overviews.
 - Include code samples where they clarify usage.
 - Describe parameters, return values, and exceptions in prose — do not use `@param` or `@return`
@@ -62,9 +60,10 @@ comment is where it creeps back in.
 
 ## What Not to Put in Documentation
 
-- No realistic note text, emotion selections, or scale sequences presented as a person's data. Use
-  obviously synthetic values in samples.
-- No clinical claims. Document what the code does, not what a pattern in the data means.
+- No realistic user data presented as a real person's record. Use obviously synthetic values in
+  samples.
+- No claims about what the data means for the user. Document what the code does, not how to
+  interpret a pattern in someone's records.
 
 ## Excluded Files
 

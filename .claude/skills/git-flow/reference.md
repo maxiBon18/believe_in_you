@@ -44,8 +44,9 @@ There is no `post-commit` hook. Hooks fire from Git; never run them by hand, and
 
 ## Scope
 
-Use the feature or module name: `entry`, `history`, `export`, `settings`, `onboarding`, `core` — or
-`config` for tooling and repo configuration. If more than one is involved, use the most relevant.
+Use the feature or module name as it exists under `lib/` (`CLAUDE.md` § Architecture), or `core` for
+shared code and `config` for tooling and repo configuration. If more than one is involved, use the
+most relevant.
 
 ## Rules
 
@@ -53,8 +54,8 @@ Use the feature or module name: `entry`, `history`, `export`, `settings`, `onboa
 - Body: WHAT changed and WHY, not HOW. Wrap at 100 characters.
 - Footer: `Refs: #123` for an issue.
 - Breaking changes: `BREAKING CHANGE:` in the footer.
-- Use the vocabulary in `CLAUDE.md` § Vocabulary. A commit that says "entry value" when it means
-  "scale" makes the history unsearchable by the term the code uses.
+- Use the words the code uses. A commit that names a concept by a word the code does not use makes
+  the history unsearchable by the term the code does use.
 
 ## What the body is for in this project
 
@@ -62,5 +63,5 @@ Most commits do not need one. These do:
 
 - A change touching a data-integrity invariant — name the invariant and say which way it moved.
 - A schema change or migration — say what the migration preserves.
-- A change to slot-window or status derivation — say which boundary case moved.
+- A change to a time boundary or to status derivation — say which boundary case moved.
 - A deliberate non-fix, where the behaviour looks wrong and is specified.

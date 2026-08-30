@@ -1,6 +1,6 @@
 ---
 name: flutter-test
-description: "Analyze the Mood Diary app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
+description: "Analyze the app, build a test plan with rationale, get approval, then execute unit/widget/integration tests selectively. Use when asked to write tests, add test coverage, or build a test plan for Dart/Flutter code."
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
@@ -23,9 +23,9 @@ trees.
 2. `find test -type f -name "*.dart" 2>/dev/null | head -40`
 3. `find integration_test -type f -name "*.dart" 2>/dev/null | head -20`
 4. Read `pubspec.yaml` → confirm Riverpod version, Drift, and test deps.
-   `pubspec.yaml` may still be the Flutter starter template with none of them present. That is not
-   a blocker for planning — plan against the architecture, and let STOP 2 surface everything the
-   plan needs installed. Do not silently reduce the plan to what happens to be installed.
+   Some of them are not installed yet — Drift and the test doubles above all. That is not a blocker
+   for planning — plan against the architecture, and let STOP 2 surface everything the plan needs
+   installed. Do not silently reduce the plan to what happens to be installed.
    Riverpod ViewModels are tested with `ProviderContainer.test()` and provider overrides, not by
    mocking `ref` (see `.claude/rules/code/testing-rules.md`).
 
@@ -60,7 +60,7 @@ For each feature, explicitly analyze **edge cases** using the Edge Case Checklis
 
 ### Mandatory invariant coverage
 
-Any plan touching entry, summary, or persistence **must** include the invariant suite in
+Any plan touching a write path, an aggregate, or persistence **must** include the invariant suite in
 [reference.md](reference.md) § Invariant suite. These are not optional and are not negotiable down
 during plan review — they encode the rules in `data-integrity-rules.md`, which are the ones a future
 refactor will quietly break. If a plan omits them, add them before presenting it.
@@ -91,13 +91,13 @@ Ask: **"These packages are required. Add them to pubspec.yaml? (y/n)"**
   back to STOP 1).
 
 Do NOT install packages without user approval. A package that transmits data is refused outright,
-even in `dev_dependencies` — see `data-integrity-rules.md` § 6.
+even in `dev_dependencies` — see `data-integrity-rules.md` § 5.
 
 After STOP 2 resolves:
 
 3. Verify `test/` and `integration_test/` dirs exist. Create with confirmation if needed.
 4. Time-dependent cases are driven by instants the test declares and passes in. Do not add a
-   time-source package or helper — that decision is open (`CLAUDE.md` § Time handling).
+   time-source package or helper without checking `CLAUDE.md` § Time handling first.
 
 ## Step 7 — Write tests
 
@@ -105,7 +105,7 @@ Order: **Unit → Widget → Integration.**
 
 - Mirror `lib/` structure exactly, per `.claude/rules/code/testing-rules.md`.
 - Use `group()`, Arrange-Act-Assert, descriptive names
-  (`'returns skipped once the window has closed'`).
+  (`'returns closed once the boundary has passed'`).
 - Comment the test plan ID above each test: `// UT-001`.
 - Every time-dependent test supplies its own instants. No `Future.delayed` to cross a boundary, no
   real `DateTime.now()`.

@@ -27,69 +27,67 @@ twelve ✅ with no detail tells the reader nothing about whether the check was r
 
 | Area                | Result | Issues                                    |
 | ------------------- | ------ | ----------------------------------------- |
-| Data Integrity      | 🔴     | Default scale substituted for missing row |
+| Data Integrity      | 🔴     | Default value substituted for missing row |
 | Time Correctness    | 🔴     | `DateTime.now()` in a domain service      |
 | Error Handling      | ⚠️     | Missing feedback on failed save           |
 
 ### 🔴 Violations
 
-**1. Data Integrity — Default scale substituted for a missing recording**
+**1. Data Integrity — Default value substituted for a missing record**
 
-- **File:** `lib/entry/data/repo/<mapper>.dart:31`
-- **Rule:** `data-integrity-rules.md` § 1 — "Never synthesize a mood value."
-- **Issue:** The row → entity mapping supplies a neutral `3` with `??` when the stored scale is
+- **File:** `lib/<feature>/data/repo/<mapper>.dart:31`
+- **Rule:** `data-integrity-rules.md` § 1 — "Never synthesize a user-recorded value."
+- **Issue:** The row → entity mapping supplies a neutral midpoint with `??` when the stored value is
   null.
-- **Why it matters:** This writes a value the user never reported, and it is indistinguishable
-  downstream from a real one. The bias is directional — unlogged slots are disproportionately bad
-  ones — so the chart flattens exactly where the signal is strongest, and the psychologist reads
-  the fabricated 3 as an observation.
-- **Fix:** Make the mapper return a nullable entity and let the status-derivation service decide
-  what an absent row means. Delete the `??`.
+- **Why it matters:** This stores a value the user never entered, and it is indistinguishable
+  downstream from a real one. The bias is directional — the occasions a user skips are not a random
+  sample — so the output flattens exactly where the signal is strongest, and a reader takes the
+  fabricated value for an observation.
+- **Fix:** Make the mapper return a nullable entity and let the derivation service decide what an
+  absent row means. Delete the `??`.
 
 **2. Time Correctness — `DateTime.now()` in a domain service**
 
-- **File:** `lib/entry/domain/services/<name>_service.dart:22`
-- **Rule:** `CLAUDE.md` § Time handling — "Never call `DateTime.now()` in `domain/` or `data/`."
+- **File:** `lib/<feature>/domain/services/<name>_service.dart:22`
+- **Rule:** `CLAUDE.md` § Time handling.
 - **Issue:** `final now = DateTime.now();` instead of taking the instant as a parameter.
-- **Why it matters:** Slot-boundary behaviour becomes untestable. The rule that a save one
-  millisecond before the window closes succeeds and one exactly at the close does not cannot be
-  covered when the service reads the wall clock itself, and that boundary is the one the
-  no-editing invariant rests on.
-- **Fix:** Take the instant as a parameter and let the caller supply it. Do not introduce a
-  time-source abstraction to fix this — that decision is open and confirm-first.
+- **Why it matters:** Boundary behaviour becomes untestable. The rule that an action one millisecond
+  before a boundary closes succeeds and one exactly at the close does not cannot be covered when the
+  service reads the wall clock itself, and that boundary is what the surrounding invariant rests on.
+- **Fix:** Take the instant as a parameter and let the caller supply it. Check `CLAUDE.md`
+  § Time handling before introducing any other mechanism.
 
-**3. Privacy & Security — Note text written to a release log**
+**3. Privacy & Security — User-entered text written to a release log**
 
-- **File:** `lib/entry/presentation/viewmodel/<name>_viewmodel.dart:58`
-- **Rule:** Code Review § Privacy & Security — "Note text, emotion selections, and scale values
-  reach a log only behind a `kDebugMode` guard."
-- **Issue:** `log('saving draft: $draft')` interpolates the full draft, including the note, with no
+- **File:** `lib/<feature>/presentation/viewmodel/<name>_viewmodel.dart:58`
+- **Rule:** Code Review § Privacy & Security — "User-recorded values reach a log only behind a
+  `kDebugMode` guard."
+- **Issue:** `log('saving draft: $draft')` interpolates the full draft, including free text, with no
   guard, so it ships in release.
-- **Fix:** Wrap it in `if (kDebugMode) { … }`, or log the slot identifier and the status transition
-  only.
+- **Fix:** Wrap it in `if (kDebugMode) { … }`, or log the record identifier and the status
+  transition only.
 
 Note the difference in weight: the two integrity-adjacent findings earn a *Why it matters* that
-names the clinical consequence; the log leak is self-evident once stated and gets none.
+names the real consequence; the log leak is self-evident once stated and gets none.
 
 ### ⚠️ Warnings
 
 **1. Error Handling — Missing feedback on failed save**
 
-- **File:** `lib/entry/presentation/ux/<name>_page.dart:71`
-- **Rule:** `viewmodel-rules.md` § Entry ViewModel specifics — "A failed save leaves the form intact
-  and surfaces an error the user can retry from."
+- **File:** `lib/<feature>/presentation/ux/<name>_page.dart:71`
+- **Rule:** `viewmodel-rules.md` § ViewModels on a write path — "A failed save leaves the form
+  intact and surfaces an error the user can retry from."
 - **Issue:** The `AsyncError` state is handled by returning an empty `SizedBox`, so a failed save is
-  silent and the user believes the recording was stored.
+  silent and the user believes the data was stored.
 - **Fix:** Render an inline error with a retry action, keeping the current form values.
 
 ## 3. Intended behaviour reported as a finding — how to handle it
 
-A reviewer flagged that summary computation produces no data point for a day with no recordings, and
-proposed carrying the previous day's value forward so the chart line stays continuous.
+A reviewer flagged that a summary produces no data point for a period with no records, and proposed
+carrying the previous value forward so the chart line stays continuous.
 
 **This is not a finding.** The broken line is the specified behaviour
-(`data-integrity-rules.md` § 4, `business_analysis_en.md` §4). Record it as follows and do
-not open a violation:
+(`data-integrity-rules.md` § 4). Record it as follows and do not open a violation:
 
-> Not a violation — a day with zero recordings intentionally yields no point. Carrying a value
+> Not a violation — a period with zero records intentionally yields no point. Carrying a value
 > forward would fabricate an observation. See `data-integrity-rules.md` § 4.

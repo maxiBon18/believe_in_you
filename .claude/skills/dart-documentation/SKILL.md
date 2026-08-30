@@ -48,17 +48,17 @@ obvious version and silently break the record.
 
 Treat these as requiring a *why* comment, not just a *what*:
 
-- The four bodies of domain logic in `domain-layer-rules.md` § Services — window computation, status
-  derivation, mood summarisation, emotion summarisation — whatever they ended up being called.
-- Any branch ordering that looks arbitrary but is not (*not applicable* established before the time
-  comparisons, for instance).
+- Every domain service that carries an invariant (`domain-layer-rules.md` § Services) — derivation,
+  boundary computation, aggregation — whatever they ended up being called.
+- Any branch ordering that looks arbitrary but is not (a never-applicable case established before
+  the time comparisons, for instance).
 - Any place a nullable type is deliberately kept nullable rather than defaulted.
 - Any absence of an obvious convenience — no `empty()` factory, no backfill method, no interpolation
   flag.
 - Any table that is never updated in place, and the reason.
 
-The comment states the **clinical consequence**, in one sentence, and cites the rule. Not "returns
-null when absent" but "returns null rather than a neutral value — a synthesized reading is
+The comment states the **real-world consequence**, in one sentence, and cites the rule. Not "returns
+null when absent" but "returns null rather than a neutral value — a synthesized value is
 indistinguishable from a real one downstream (`data-integrity-rules.md` § 1)."
 
 ### Step 4 — Write or improve doc comments
@@ -77,14 +77,15 @@ indistinguishable from a real one downstream (`data-integrity-rules.md` § 1)."
 - Remove any commented-out code.
 - Remove any doc comments that merely restate the name or signature.
 - Remove trailing comments.
-- Verify consistent terminology across all modified files against `CLAUDE.md` § Vocabulary. See
-  [reference.md](reference.md) § Terminology for the one obligation prose carries beyond that table.
+- Verify consistent terminology across all modified files against the words the codebase and
+  `CLAUDE.md` already use. See [reference.md](reference.md) § Terminology for the one obligation
+  prose carries beyond identifiers.
 
 ### Step 6 — Verify
 
 - Confirm every public API in the modified files has a doc comment.
 - Confirm no generated files were modified.
-- Confirm no doc comment or code sample contains realistic note text, emotion selections, or scale
-  values presented as someone's actual data.
+- Confirm no doc comment or code sample contains realistic user data presented as someone's actual
+  record.
 - Report a summary: number of files touched, doc comments added, improved, removed, and how many
   invariant explanations were added.

@@ -1,6 +1,6 @@
 ---
 name: dart-review
-description: "Run a structured 12-area code review on Mood Diary Dart files. Use when asked to review code, check code quality, or audit changes in lib/**/*.dart. Covers data integrity, architecture, time correctness, code quality, null safety, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
+description: "Run a structured 12-area code review on this project's Dart files. Use when asked to review code, check code quality, or audit changes in lib/**/*.dart. Covers data integrity, architecture, time correctness, code quality, null safety, widgets, state management, error handling, performance, privacy, accessibility, and dependencies."
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 ---
@@ -27,8 +27,9 @@ Every `dart`/`flutter` command in this skill takes the `fvm` prefix (see `CLAUDE
 - **🔴 Violation** — must fix before push.
 
 **Data-integrity findings are always 🔴.** They are never downgraded to a warning, never deferred,
-and never accepted with a TODO. The output of this app is read by a clinician; a fabricated or
-distorted value is a correctness bug of the most serious kind. See `data-integrity-rules.md`.
+and never accepted with a TODO. What this app stores is the user's own record and is read as an
+observation of what happened; a fabricated or distorted value is a correctness bug of the most
+serious kind. See `data-integrity-rules.md` and `CLAUDE.md` § Invariants.
 
 ## Instructions
 
@@ -47,16 +48,17 @@ distorted value is a correctness bug of the most serious kind. See `data-integri
 ### Step 2 — Data integrity
 
 **Run this first.** It is the area where a finding blocks everything else, so there is no point
-reviewing formatting in a file that fabricates a mood value.
+reviewing formatting in a file that fabricates a stored value.
 
-- Read `.claude/rules/code/data-integrity-rules.md`.
-- Check every one of the eight invariants against the files in scope. The recurring shapes are:
-  - `??` or a default parameter supplying a scale, emotion set, or timestamp
+- Read `.claude/rules/code/data-integrity-rules.md`, and `CLAUDE.md` § Invariants for the project's
+  own.
+- Check every invariant against the files in scope. The recurring shapes are:
+  - `??` or a default parameter supplying a value the user never entered
   - a read path that writes — row creation during a fetch, an upsert inside a query
-  - a persisted `status`, or a stored `skipped`/`backfilled` flag
-  - missing values treated as zero in an average, or a chart interpolating across a gap
-  - a save path still reachable after the window has closed
-  - streak counters, progress rings, celebratory or admonishing copy
+  - a persisted status column, or a stored flag for something derivable
+  - missing values treated as zero in an aggregate, or a chart interpolating across a gap
+  - a write path still reachable after the domain rules have closed it
+  - copy or UI that evaluates the user rather than reporting facts
   - anything with a transport dependency
   - a migration that drops or recreates without copying
 
@@ -64,26 +66,29 @@ reviewing formatting in a file that fabricates a mood value.
 
 - Read `CLAUDE.md` §§ Architecture, Dependency rule, Where things live.
 - Verify each file respects layer boundaries (data, domain, presentation) and the inward dependency
-  direction. Check specifically that domain logic — window computation, status derivation,
-  averaging — has not migrated into a ViewModel or a widget.
-- If the file navigates, read `.claude/rules/code/routing-rules.md`. Flag any `Navigator.push` with
-  a widget literal, any `MaterialPageRoute` outside the router, any `AppRouter` held by a ViewModel,
-  and any `default` branch in a `switch` over `AppRoute`.
+  direction. Check specifically that domain logic — derivation, boundary computation, aggregation —
+  has not migrated into a ViewModel or a widget.
+- If the file navigates, read `.claude/rules/code/routing-rules.md`. Flag any `context.go` /
+  `context.push` / `GoRouter.of(context)` outside `core/presentation/ux/routing/`, any
+  `go_router` import outside that directory, any `Navigator.push` with a widget literal, any
+  `AppRouter` held by a ViewModel, any `GoRouterState` value cast instead of validated, and any
+  `default` branch in a `switch` over `AppRoute`.
 
 ### Step 4 — Time correctness
 
 - Read `CLAUDE.md` § Time handling and `.claude/rules/code/domain-layer-rules.md` § Services.
 - Verify no `DateTime.now()`, `DateTime.timestamp()`, or bare `Timer` in `domain/` or `data/`, and
-  none in a ViewModel used to decide slot state — instants arrive as parameters.
-- Flag anything that introduces a time-source abstraction: that decision is open and confirm-first.
-- Verify window arithmetic uses local wall-clock time and that the IANA timezone is carried.
+  none in a ViewModel used to decide time-dependent state — instants arrive as parameters.
+- Check any change to how the app sources the current time against `CLAUDE.md` § Time handling.
+- Verify boundary arithmetic uses local wall-clock components rather than added durations, and that
+  the timezone the computation depends on is carried rather than assumed.
 - Flag any comparison between timestamps from different zones without normalization.
 
 ### Step 5 — Dart code quality
 
 - Read `.claude/rules/code/coding-conventions.md`.
 - Check naming, typing, immutability, size limits, and general Dart idioms.
-- Verify sealed types — slot status above all — are handled with exhaustive `switch`, not `if`
+- Verify sealed types — status types above all — are handled with exhaustive `switch`, not `if`
   chains, and that no `default` branch swallows a new variant.
 
 ### Step 6 — Null safety
@@ -91,7 +96,7 @@ reviewing formatting in a file that fabricates a mood value.
 - Read `.claude/rules/code/coding-conventions.md` § Null safety.
 - Verify no unnecessary nullable types, no `!` force-unwraps without a documented reason, and
   correct null-aware operator usage.
-- A `??` supplying a recorded value is a data-integrity violation, not a null-safety warning —
+- A `??` supplying a user-recorded value is a data-integrity violation, not a null-safety warning —
   report it under Step 2.
 
 ### Step 7 — Flutter widget quality
@@ -105,8 +110,8 @@ reviewing formatting in a file that fabricates a mood value.
 - Verify provider lifetime, `ref.watch` vs `ref.read`, `AsyncValue` modeling, and async-gap guards.
 - Flag any Riverpod code generation: `@riverpod` / `@Riverpod`, a `_$` notifier superclass, or a
   `part '*.g.dart';` in a ViewModel. Providers are declared by hand in this project.
-- Check the entry ViewModel rules specifically: explicit save, no autosave, no optimistic clear, no
-  default scale in initial state.
+- On a write path, check the rules in `viewmodel-rules.md` § ViewModels on a write path
+  specifically: explicit save, no autosave, no optimistic clear, no default value in initial state.
 
 ### Step 9 — Error handling
 
@@ -118,21 +123,22 @@ reviewing formatting in a file that fabricates a mood value.
 
 - Read `.claude/rules/code/presentation-layer-rules.md` § Performance.
 - Check for unnecessary rebuilds, missing `const`, aggregation inside `build()`, and anything
-  blocking on the path to first frame — cold start is part of the 20-second entry budget.
+  blocking on the path to first frame — cold start counts against the time-to-task budget in
+  `CLAUDE.md`.
 
 ### Step 11 — Privacy & security
 
 - Apply the rules in [reference.md](reference.md) § Privacy & Security.
-- Check for secrets, unguarded note text or scale values in logs (a `kDebugMode` guard clears the
-  line), unencrypted persistence, and any package that could carry data off-device.
+- Check for secrets, unguarded user-recorded values in logs (a `kDebugMode` guard clears the line),
+  unencrypted persistence, and any package that could carry data off-device.
 
 ### Step 12 — Accessibility & responsiveness
 
 - Read `.claude/rules/code/presentation-layer-rules.md` § Responsive and accessible.
-- Check text scaling on the scale selector and emotion chips, 48x48 targets, semantics on the scale
-  faces, and that colour is never the sole carrier of meaning.
-- Flag any red-to-green mood ramp — see reference.md § Privacy & Security for why it is reviewed
-  here rather than treated as styling.
+- Check text scaling on compact multi-item controls, 48x48 targets, semantics on icons and images
+  that carry meaning, and that colour is never the sole carrier of meaning.
+- Check the colour and copy rules the project states in `CLAUDE.md` § Invariants — see
+  reference.md § Privacy & Security for why those are reviewed here rather than treated as styling.
 
 ### Step 13 — Dependencies & imports
 

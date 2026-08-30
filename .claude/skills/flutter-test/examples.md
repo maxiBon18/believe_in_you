@@ -1,7 +1,7 @@
 # Examples
 
-**Targets below are placeholders.** Name the logic under test — *window computation*, *status
-derivation*, *the scale selector* — until the code exists, then use its real symbol. A plan that
+**Targets below are placeholders.** Name the logic under test — *boundary computation*, *status
+derivation*, *the value selector* — until the code exists, then use its real symbol. A plan that
 invents a class name commits the implementation to it before anyone chose it.
 
 The invariant IDs and edge-case categories are enumerated in [reference.md](reference.md); the rows
@@ -11,10 +11,10 @@ below are excerpts showing the *column shape and the depth of a Rationale*, not 
 
 | Type        | Cases  | Features                                             | Est. Time |
 | ----------- | ------ | ---------------------------------------------------- | --------- |
-| Unit        | 18     | Windows, status, summary, repository                 | ~20s      |
-| Widget      | 7      | Scale selector, emotion chips, entry page            | ~25s      |
+| Unit        | 18     | Boundaries, status, aggregation, repository          | ~20s      |
+| Widget      | 7      | Value selector, chip row, capture page               | ~25s      |
 | Migration   | 2      | Schema v1→v2, v2→v3                                  | ~5s       |
-| Integration | 3      | Onboarding→first recording, Notification tap, Export | ~90s      |
+| Integration | 3      | First run → first record, external launch, file export | ~90s    |
 | **Total**   | **30** |                                                      | **~140s** |
 
 Invariant suite: 11 of 11 included.
@@ -23,28 +23,28 @@ Invariant suite: 11 of 11 included.
 
 | ID     | Type   | Target                | Description                                       | Rationale                                                                     | Deps       | Priority |
 | ------ | ------ | --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- | -------- |
-| UT-001 | Unit   | window computation    | Splits a 16h waking span into three equal windows  | Every other slot behaviour depends on these boundaries being right             | None       | Critical |
-| UT-002 | Unit   | status derivation     | Returns *open* inside the window                   | The entry form is editable only in this state                                  | Fixed instant | Critical |
-| WT-002 | Widget | entry page            | Save disabled until a scale and one emotion exist  | Prevents an empty or partial recording being written                           | Fake VM    | Critical |
-| IT-001 | Integration | Onboarding → first recording | Completes onboarding and saves one recording | Validates the full chain: schedule write → window computation → save → chart   | Fixed instant | Critical |
+| UT-001 | Unit   | boundary computation  | Splits the configured span into equal ranges       | Every other time-dependent behaviour depends on these boundaries being right   | None       | Critical |
+| UT-002 | Unit   | status derivation     | Returns *open* inside the range                    | The form is editable only in this state                                        | Fixed instant | Critical |
+| WT-002 | Widget | capture page          | Save disabled until the required fields exist      | Prevents an empty or partial record being written                              | Fake VM    | Critical |
+| IT-001 | Integration | First run → first record | Completes setup and saves one record       | Validates the full chain: config write → boundary computation → save → display | Fixed instant | Critical |
 
 ### Invariant Tests (prefix `INV-`)
 
 | ID     | Type   | Target                | Description                                              | Rationale                                                                                              | Deps       | Priority |
 | ------ | ------ | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | -------- |
-| INV-02 | Unit   | row → entity mapping  | Null scale maps to null entity, not a default            | A default reads back as a real observation in the clinician's export                                    | None       | Critical |
-| INV-08 | Migration | Schema v2 → v3     | All pre-existing recordings survive with identical values | This is the developer's own clinical record with no backup — a lossy migration is unrecoverable         | Real schemas | Critical |
+| INV-02 | Unit   | row → entity mapping  | Null column maps to null entity, not a default            | A default reads back as a real observation in generated output                                          | None       | Critical |
+| INV-08 | Migration | Schema v2 → v3     | All pre-existing rows survive with identical values       | The store is the user's own record with no backup — a lossy migration is unrecoverable                  | Real schemas | Critical |
 
-Note the Rationale column on both: it states the clinical consequence, never the rule number. "Covers
+Note the Rationale column on both: it states the real consequence, never the rule number. "Covers
 `data-integrity-rules.md` § 1" does not tell a reviewer what breaks.
 
 ### Edge Case Tests (suffix `-E`)
 
 | ID       | Type   | Target              | Description                                                    | Rationale                                                                                   | Deps          | Priority |
 | -------- | ------ | ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------- | -------- |
-| UT-002-E | Unit   | status derivation   | Open one millisecond before the close, skipped at the close     | Half-open interval — a closed interval would let one instant belong to two slots             | Fixed instants | Critical |
-| UT-003-E | Unit   | window computation  | Spring-forward transition inside the second window              | A duration-based offset silently shifts boundaries by an hour twice a year                   | Fixed instants | High     |
-| WT-003-E | Widget | entry page          | Window closes while the screen is open → becomes read-only      | Without it a save lands after the window shut, violating the no-backfill rule from the UI    | Fixed instants | Critical |
+| UT-002-E | Unit   | status derivation   | Open one millisecond before the close, closed at the close      | Half-open interval — a closed interval would let one instant belong to two ranges             | Fixed instants | Critical |
+| UT-003-E | Unit   | boundary computation | Spring-forward transition inside the second range              | A duration-based offset silently shifts boundaries by an hour twice a year                   | Fixed instants | High     |
+| WT-003-E | Widget | capture page        | Boundary closes while the screen is open → becomes read-only    | Without it a save lands after the boundary shut, breaking the rule from the UI side          | Fixed instants | Critical |
 
 ## Missing Packages STOP Format
 
@@ -63,8 +63,8 @@ Add these to pubspec.yaml? (y/n)
 
 | Type        | Include? | Reason                                                                                                    |
 | ----------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| Unit        | ✅        | History has date-range and aggregation logic                                                              |
-| Integration | ❌        | Onboarding→first recording already exercises navigation into History; a separate flow duplicates coverage |
+| Unit        | ✅        | The feature has date-range and aggregation logic                                                          |
+| Integration | ❌        | The first-run flow already exercises navigation into this screen; a separate flow duplicates coverage      |
 
 ## Report Format — invariant line first
 

@@ -1,96 +1,78 @@
 ---
-description: "Clinical data invariants — read before changing anything that reads or writes a recording"
+description: "Data invariants — read before changing anything that reads or writes user-recorded data"
 paths:
   - "lib/**/*.dart"
 ---
 
 # Data Integrity
 
-The output of this app is read by a clinician and informs treatment. A design that fabricates or
-distorts a value is a real failure, not a cosmetic one. These invariants are not open to
-convenience-driven revision. An implementation that violates one is wrong regardless of how clean
-it looks — raise it rather than weakening it.
+What this app stores is the user's own record, and the app's output is read as an observation of
+what actually happened. A design that fabricates or distorts a value is a real failure, not a
+cosmetic one. These invariants are not open to convenience-driven revision. An implementation that
+violates one is wrong regardless of how clean it looks — raise it rather than weakening it.
 
-Rationale for each is in `business_analysis_en.md` §4.
+The project's own invariants — the ones that come from the product rather than from data handling —
+are in `CLAUDE.md` § Invariants, and they bind exactly as hard as these. Where a rule below says
+"the project decides", that is where to look.
 
-## 1. Never synthesize a mood value
+## 1. Never synthesize a user-recorded value
 
 No defaults, no imputation, no neutral fill, no interpolation, no carrying the previous value
-forward. A missing recording is missing.
+forward. A missing record is missing.
 
-This is the most serious defect found in review. Unlogged evenings are disproportionately bad
-evenings, so imputing a neutral value systematically replaces the worst data with the blandest —
-and the clinician reads the result as an observation.
+This is the most serious defect found in review. Absent records are not randomly distributed — the
+occasions a user skips differ systematically from the ones they log — so imputing a neutral value
+replaces the most informative data with the blandest, and it is then read as an observation.
 
 Concretely, all of these are bugs, whatever the surrounding code is called:
 
-- `??` supplying a scale when the stored value is absent
-- an average that maps missing values to a neutral number before summing
-- a lookup that returns a placeholder observation when no row matched
+- `??` supplying a value when the stored one is absent
+- an aggregate that maps missing values to a neutral number before summing
+- a lookup that returns a placeholder record when no row matched
 - a chart configured to interpolate across a gap
 
 ## 2. A row exists only because the user saved it
 
-The recording store holds real observations and nothing else.
+The store holds real observations and nothing else.
 
-- No background job creates rows at the start of a day.
-- No persisted status column. Status is derived at read time by a domain service.
-- Reading a slot must never write one.
+- No background job creates rows ahead of the user.
+- Reading must never write. Fetching a range must not create rows for the parts of it that are
+  empty.
+- A write happens on an explicit user action, never on navigation away, dispose, or a timer.
 
-*Skipped* and *not applicable* are computed from the schedule in effect on that date plus the
-absence of a row. If you find yourself wanting to persist them, the derivation is in the wrong
-place.
+## 3. Derived state is computed, never stored
 
-## 3. No editing after the window closes
+Status that follows from stored facts plus the rules in effect is derived at read time by a domain
+service — never persisted as a column, and never cached in a way that can disagree with the facts
+it came from.
 
-A recording is editable while its slot window is open and permanently read-only afterwards. There
-is no backfill path and no "recorded late" flag, which is why a recording's timestamp always falls
-inside its own slot window — half-open, so the closing instant belongs to no slot — and no
-provenance flag is needed to interpret the data.
-
-A skipped slot stays skipped. Do not add a UI affordance to fill it in.
+If you find yourself wanting to persist a derived status, the derivation is in the wrong place.
+Absence is itself a fact the derivation reads; it is not a row to write.
 
 ## 4. Missing data is excluded, never zeroed
 
-- The daily average is computed over completed slots only.
-- A skipped slot is never counted as zero and never imputed.
-- A day with zero recordings produces no point, and the chart line breaks rather than bridging it.
-- A day with one or two recordings is marked as incomplete wherever its average is displayed.
+- An aggregate is computed over the records that exist.
+- A missing record is never counted as zero and never imputed.
+- A period with no records produces no point, and a chart line breaks rather than bridging it.
+- A partial period is marked as partial wherever its aggregate is displayed.
 
-## 5. No streaks, scores, or evaluative copy
+## 5. Nothing leaves the device
 
-No streak counters, badges, points, progress rings, or trophies. No celebratory language
-(*"great job"*, *"don't break your streak"*) and no admonishing language (*"you missed 3 days"*).
-
-In a depressed population a broken streak reads as evidence of failure — the exact cognitive
-pattern the therapy is working against — and the risk lands by construction on the worst days.
-
-Completion rate is stated factually (`18 of 21`), appears in History and the export, and never on
-the entry screen.
-
-## 6. Nothing leaves the device
-
-No network calls, no analytics, no remote config, no third-party crash reporting. Crash reporters
-in particular can carry note text off-device, so they are excluded even though they would be
+No network calls, no analytics, no remote config, no third-party crash reporting. Crash reporters in
+particular can carry user-entered text off-device, so they are excluded even though they would be
 useful.
 
-Do not add a package with a transport dependency without raising it first. The only data that
-leaves is what the user explicitly exports through the OS share sheet.
+Do not add a package with a transport dependency without raising it first. The only data that leaves
+is what the user explicitly hands to the OS — a share sheet, a file save — by their own action.
 
-## 7. Support resources stay reachable
+## 6. Migrations must not lose data
 
-The support-resources screen is reachable from Settings, permanently, and never interrupts
-anything. Do not add content scanning, keyword detection, or reactive prompts to the note field —
-it must remain a place where the user can write honestly.
-
-## 8. Migrations must not lose recordings
-
-This is the developer's own clinical record and there is no backup anywhere else.
+The store is the user's own record, and there may be no backup anywhere else.
 
 - Every schema change ships with a migration and a migration test.
 - No destructive migration — no column drops that discard data, no table recreation without copy.
 - The schema version is incremented explicitly, never inferred.
-- Confirm before writing any migration (`CLAUDE.md` § Confirm first).
+- Confirm before writing any migration.
 
 ## When a requirement conflicts with an invariant
 

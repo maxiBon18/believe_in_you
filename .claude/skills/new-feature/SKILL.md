@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Scaffold a new feature directory structure using the project's Clean Architecture template.
 
-Creating a feature module is **confirm-first** (`CLAUDE.md`). Step 1 is that confirmation — do not
+Creating a feature module is **confirm-first**. Step 1 is that confirmation — do not
 skip it because the feature name is already obvious from the conversation.
 
 ## Step 1 — Get and check the feature name
@@ -49,4 +49,5 @@ The scaffold is directories only. Name what still needs a decision rather than f
 
 - DI registration in `lib/<feature>/shared/controllers/di.dart` (`di-rules.md`).
 - Route configs, if the feature has a destination — confirm-first (`routing-rules.md`).
-- Whether any domain service here carries a data-integrity invariant.
+- Whether any domain service here carries a data-integrity invariant
+  (`data-integrity-rules.md`, `CLAUDE.md` § Invariants).
