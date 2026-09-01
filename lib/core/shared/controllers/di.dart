@@ -1,3 +1,4 @@
+import 'package:believe_in_you/core/shared/utils/logger/custom_navigator_observer.dart';
 import 'package:believe_in_you/core/shared/utils/logger/logger_app.dart';
 import 'package:believe_in_you/core/shared/utils/logger/logger_app_impl.dart';
 import 'package:believe_in_you/core/shared/utils/logger/provider_logger.dart';
@@ -16,4 +17,5 @@ Future<void> setupAllDependencies() async {
 Future<void> setupDependencies(GetIt getIt) async {
   getIt.registerSingletonIfAbsent<AppLogger>(() => AppLoggerImpl());
   getIt.registerSingletonIfAbsent<ProviderLogger>(() => ProviderLogger());
+  getIt.registerSingletonIfAbsent<BelieveInYouNavigatorObserver>(() => BelieveInYouNavigatorObserver());
 }

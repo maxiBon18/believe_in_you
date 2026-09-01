@@ -121,6 +121,8 @@ abstract final class AppSizes {
   /// Extent of a panel measuring 120 — the trend chart's height, the height
   /// the note field grows to before it scrolls.
   static const double panel = 120;
+
+  static const double loadingSize = 48;
 }
 
 /// Space, whether inside a container or between siblings.

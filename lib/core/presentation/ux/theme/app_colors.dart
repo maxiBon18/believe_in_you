@@ -135,6 +135,8 @@ abstract final class AppColors {
   /// The only red in the app. A scale value is never red: see [scale1].
   static const Color danger = Color(0xFFC4453F);
 
+  static const Color loadingBackground = Color.fromARGB(141, 13, 13, 38);
+
   /// Background gradient of the app surface, top to bottom.
   static const LinearGradient surfaceGradient = LinearGradient(
     begin: Alignment.topCenter,
